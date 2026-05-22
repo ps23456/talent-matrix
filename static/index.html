@@ -666,9 +666,14 @@
       <span class="setting-val" id="set-provider">openai</span>
     </div>
     <div class="setting-row">
+      <span class="setting-label">Model</span>
+      <span class="setting-val" id="set-model">—</span>
+    </div>
+    <div class="setting-row">
       <span class="setting-label">API Key Status</span>
       <span class="setting-val key-ok" id="set-key-status">✅ Configured</span>
     </div>
+    <button class="btn-ghost" style="width:100%;margin-top:8px" onclick="testLlmConnection()">Test AI Connection</button>
     <div class="setting-row">
       <span class="setting-label">Mistral OCR</span>
       <span class="setting-val key-miss" id="set-mistral">❌ Not set</span>
@@ -750,17 +755,20 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jd_id: jdId }),
       }),
+      getChatHistory: (candidateId) => API.request(`/api/chat/${candidateId}`),
       chat: (candidateId, message) => API.request('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ candidate_id: candidateId, message }),
       }),
+      getInterview: (candidateId) => API.request(`/api/interview/${candidateId}`),
       interview: (candidateId, jdId) => API.request('/api/interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ candidate_id: candidateId, jd_id: jdId || null }),
       }),
       settings: () => API.request('/api/settings'),
+      testLlm: () => API.request('/api/llm/test', { method: 'POST' }),
       clear: () => API.request('/api/clear', { method: 'DELETE' }),
     };
 
@@ -843,6 +851,7 @@
       try {
         const s = await API.settings();
         document.getElementById('set-provider').textContent = s.provider || 'openai';
+        document.getElementById('set-model').textContent = s.model || '—';
         const active = s.active_key_set || s.keys?.[s.provider];
         const el = document.getElementById('set-key-status');
         el.textContent = active ? '✅ Configured' : '❌ Not set';
@@ -865,7 +874,10 @@
       document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
       updateTopbar();
       if (page === 'chat') renderChat();
-      if (page === 'interview') renderInterviewSelect();
+      if (page === 'interview') {
+        renderInterviewSelect();
+        loadInterviewForCandidate();
+      }
     }
 
     function updateTopbar() {
@@ -1104,7 +1116,7 @@
           <span class="bd-label">${CRITERIA_LABELS[k] || k}</span>
           <div>
             <div class="bd-track"><div class="bd-fill" style="width:${v.score}%;background:${scoreColor(v.score)}"></div></div>
-            <div class="bd-reason">${v.reason}</div>
+            <div class="bd-reason">${escHtml(v.reason || '')}</div>
           </div>
           <span class="bd-pct">${v.score}</span>
         </div>`).join('');
@@ -1115,15 +1127,15 @@
             <div class="c-avatar" style="background:${avBg};color:${avTx}">${initials}</div>
             <div class="c-info">
               <div class="c-name">
-                ${c.candidate_name}
+                ${escHtml(c.candidate_name)}
                 <span class="verdict-tag ${verdictClass(c.verdict)}">${verdictLabel(c.verdict)}</span>
               </div>
-              <div class="c-meta">${c.role_title} · ${c.years_experience} yrs · ${c.location}</div>
+              <div class="c-meta">${escHtml(c.role_title || '—')} · ${c.years_experience || 0} yrs · ${escHtml(c.location || '—')}</div>
               ${c.better_fit_jd ? `<span class="better-fit-pill">Better fit for: ${c.better_fit_jd}</span>` : ''}
             </div>
             ${renderScoreCircle(c.overall_score, c.candidate_id)}
           </div>
-          <p class="c-summary">${c.summary}</p>
+          <p class="c-summary">${escHtml(c.summary || '')}</p>
           <div class="mini-bars">${miniBars}</div>
           <div class="card-actions">
             <button class="btn-ghost" onclick="goChat('${c.candidate_id}')">Chat</button>
@@ -1175,21 +1187,39 @@
       log.classList.add('active');
       log.innerHTML = '';
       const names = appState.resumes.map(r => r.name);
+      const logLines = [];
       try {
-        for (let i = 0; i < names.length; i++) {
-          await new Promise(r => setTimeout(r, 300));
+        names.forEach((name, i) => {
           const line = document.createElement('div');
           line.className = 'log-line';
-          line.textContent = `Analyzing ${names[i]}...`;
+          line.id = `log-line-${i}`;
+          line.textContent = `Analyzing ${name}...`;
           log.appendChild(line);
-          log.scrollTop = log.scrollHeight;
-        }
-        const data = await API.match(jdId);
+          logLines.push(line);
+        });
+        log.scrollTop = log.scrollHeight;
+
+        const matchPromise = API.match(jdId);
+        const ticker = setInterval(() => {
+          const pending = logLines.find(l => !l.classList.contains('done'));
+          if (pending) pending.scrollIntoView({ block: 'nearest' });
+        }, 500);
+
+        const data = await matchPromise;
+        clearInterval(ticker);
+
+        logLines.forEach(line => {
+          line.classList.add('done');
+          line.textContent = line.textContent.replace('...', ' — scored ✓');
+        });
+
         appState.matchResults = data.results || [];
         appState.matchHasRun = true;
         appState.selectedJdId = jdId;
         log.innerHTML += `<div class="log-line done">✓ ${appState.matchResults.length} candidates ranked</div>`;
         renderCandidates();
+        renderChatSelect();
+        renderInterviewSelect();
         updateTopbar();
         showToast('AI matching complete!', 'success');
       } catch (e) {
@@ -1197,7 +1227,7 @@
         showToast(e.message, 'error');
       } finally {
         btn.disabled = false;
-        setTimeout(() => log.classList.remove('active'), 4000);
+        setTimeout(() => log.classList.remove('active'), 5000);
       }
     }
 
@@ -1206,11 +1236,11 @@
       navigate('chat');
     }
 
-    function goInterview(id) {
+    async function goInterview(id) {
       appState.interviewTarget = id;
-      appState.interviewQuestions = null;
       navigate('interview');
-      renderInterviewSections();
+      renderInterviewSelect();
+      await loadInterviewForCandidate();
     }
 
     /* ── Compare modal ── */
@@ -1295,19 +1325,26 @@
       const preview = document.getElementById('resume-preview');
       preview.textContent = 'Loading resume...';
       try {
-        const data = await API.getResume(appState.chatTarget);
-        preview.textContent = data.text?.trim() || '(No text extracted from this PDF yet)';
+        const [resumeData, chatData] = await Promise.all([
+          API.getResume(appState.chatTarget),
+          API.getChatHistory(appState.chatTarget),
+        ]);
+        preview.textContent = resumeData.text?.trim() || '(No text extracted from this PDF yet)';
+        appState.chatHistory[appState.chatTarget] = chatData.history || [];
       } catch (e) {
         preview.textContent = `(Could not load resume: ${e.message})`;
+        appState.chatHistory[appState.chatTarget] = [];
       }
       renderChatMessages();
     }
 
     function renderChatMessages() {
       const hist = appState.chatHistory[appState.chatTarget] || [];
-      document.getElementById('chat-messages').innerHTML = hist.map(m => `
-        <div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${m.content}</div>
-      `).join('');
+      document.getElementById('chat-messages').innerHTML = hist.length
+        ? hist.map(m => `
+        <div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${escHtml(m.content)}</div>
+      `).join('')
+        : '<div style="color:var(--t3);font-size:12px;padding:8px">Ask a question about this candidate\'s resume.</div>';
       const box = document.getElementById('chat-messages');
       box.scrollTop = box.scrollHeight;
     }
@@ -1359,7 +1396,25 @@
       sel.innerHTML = candidates.map(c =>
         `<option value="${c.id}" ${c.id === appState.interviewTarget ? 'selected' : ''}>${escHtml(c.label)}</option>`
       ).join('');
-      sel.onchange = () => { appState.interviewTarget = sel.value; };
+      sel.onchange = () => {
+        appState.interviewTarget = sel.value;
+        loadInterviewForCandidate();
+      };
+    }
+
+    async function loadInterviewForCandidate() {
+      if (!appState.interviewTarget) {
+        appState.interviewQuestions = null;
+        renderInterviewSections();
+        return;
+      }
+      try {
+        const data = await API.getInterview(appState.interviewTarget);
+        appState.interviewQuestions = data.questions || null;
+      } catch (_) {
+        appState.interviewQuestions = null;
+      }
+      renderInterviewSections();
     }
 
     async function generateInterview() {
@@ -1390,8 +1445,8 @@
         const items = q[sec.key] || [];
         const questions = items.map((item, qi) => `
           <div class="iq-q ${item.asked ? 'asked' : ''}" id="iq-${sec.key}-${qi}">
-            <div class="iq-q-text">${item.q}</div>
-            <div class="iq-why">${item.why_ask}</div>
+            <div class="iq-q-text">${escHtml(item.q)}</div>
+            <div class="iq-why">${escHtml(item.why_ask)}</div>
             <label class="iq-check">
               <input type="checkbox" ${item.asked ? 'checked' : ''}
                 onchange="toggleAsked('${sec.key}', ${qi}, this.checked)" />
@@ -1428,10 +1483,23 @@
         showToast('Select a candidate first', 'error');
         return;
       }
+      if (!appState.interviewQuestions) {
+        showToast('Generate interview questions first', 'error');
+        return;
+      }
       window.open(`/api/interview/export?candidate_id=${encodeURIComponent(appState.interviewTarget)}`, '_blank');
     }
 
     /* ── Settings ── */
+    async function testLlmConnection() {
+      try {
+        const data = await API.testLlm();
+        showToast(`AI connected (${data.provider}): ${data.reply}`, 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
     function openSettings() {
       document.getElementById('settings-drawer').classList.add('open');
       document.getElementById('drawer-backdrop').classList.add('open');

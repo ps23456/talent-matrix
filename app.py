@@ -11,6 +11,10 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from core.chat import answer_question, append_turn
+from core.interview import generate_questions
+from core.llm_client import LLMClient, LLMError, get_client
+from core.matcher import score_all_resumes
 from core.pdf_loader import PDFLoadError, extract_text
 
 load_dotenv(Path(__file__).parent / ".env")
@@ -139,14 +143,29 @@ async def upload_jd(file: UploadFile = File(...)):
 
 
 def _key_status() -> dict:
-    provider = os.getenv("LLM_PROVIDER", "openai")
+    provider = os.getenv("LLM_PROVIDER", "openai").lower().strip()
     keys = {
-        "anthropic": bool(os.getenv("ANTHROPIC_API_KEY")),
-        "openai": bool(os.getenv("OPENAI_API_KEY")),
-        "gemini": bool(os.getenv("GEMINI_API_KEY")),
-        "mistral": bool(os.getenv("MISTRAL_API_KEY")),
+        "anthropic": bool(os.getenv("ANTHROPIC_API_KEY", "").strip()),
+        "openai": bool(os.getenv("OPENAI_API_KEY", "").strip()),
+        "gemini": bool(os.getenv("GEMINI_API_KEY", "").strip()),
+        "mistral": bool(os.getenv("MISTRAL_API_KEY", "").strip()),
     }
-    return {"provider": provider, "keys": keys, "active_key_set": keys.get(provider, False)}
+    model_env = {
+        "anthropic": "ANTHROPIC_MODEL",
+        "openai": "OPENAI_MODEL",
+        "gemini": "GEMINI_MODEL",
+    }
+    default_models = {
+        "anthropic": "claude-sonnet-4-20250514",
+        "openai": "gpt-4o-mini",
+        "gemini": "gemini-1.5-flash",
+    }
+    return {
+        "provider": provider,
+        "keys": keys,
+        "active_key_set": keys.get(provider, False),
+        "model": os.getenv(model_env.get(provider, ""), default_models.get(provider, "")),
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -213,30 +232,116 @@ async def run_match(body: MatchRequest):
         raise HTTPException(status_code=404, detail="Job description not found.")
     if not store["resumes"]:
         raise HTTPException(status_code=400, detail="Upload at least one resume first.")
-    raise HTTPException(
-        status_code=503,
-        detail="AI matching is not configured yet. Complete Step 6–7 (LLM client + matcher).",
-    )
+
+    jd_text = store["jds"][body.jd_id].get("text", "")
+    resumes = list(store["resumes"].values())
+
+    try:
+        results = score_all_resumes(resumes, jd_text)
+    except LLMError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="AI matching failed. Please try again in a moment.",
+        ) from exc
+
+    store["match_results"][body.jd_id] = results
+    return {"results": results, "jd_id": body.jd_id}
+
+
+@app.get("/api/chat/{candidate_id}")
+async def get_chat_history(candidate_id: str):
+    if candidate_id not in store["resumes"]:
+        raise HTTPException(status_code=404, detail="Candidate not found.")
+    return {"history": store["chat_history"].get(candidate_id, [])}
 
 
 @app.post("/api/chat")
 async def chat(body: ChatRequest):
     if body.candidate_id not in store["resumes"]:
         raise HTTPException(status_code=404, detail="Candidate not found.")
-    raise HTTPException(
-        status_code=503,
-        detail="Resume chat is not configured yet. Complete Step 6 and 8 (LLM client + chat).",
-    )
+
+    message = body.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+
+    resume = store["resumes"][body.candidate_id]
+    history = store["chat_history"].get(body.candidate_id, [])
+
+    try:
+        reply = answer_question(resume.get("text", ""), message, history)
+    except LLMError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Chat failed. Please try again in a moment.",
+        ) from exc
+
+    history = append_turn(history, "user", message)
+    history = append_turn(history, "assistant", reply)
+    store["chat_history"][body.candidate_id] = history
+
+    return {"reply": reply, "history": history}
+
+
+def _weaknesses_for_candidate(candidate_id: str, jd_id: str | None) -> list[str]:
+    if not jd_id:
+        return []
+    for row in store["match_results"].get(jd_id, []):
+        if row.get("candidate_id") == candidate_id:
+            return row.get("weaknesses") or []
+    return []
+
+
+def _resolve_jd_id(jd_id: str | None) -> str | None:
+    if jd_id and jd_id in store["jds"]:
+        return jd_id
+    if len(store["jds"]) == 1:
+        return next(iter(store["jds"]))
+    return jd_id if jd_id in store["jds"] else None
+
+
+@app.get("/api/interview/{candidate_id}")
+async def get_interview_questions(candidate_id: str):
+    if candidate_id not in store["resumes"]:
+        raise HTTPException(status_code=404, detail="Candidate not found.")
+    return {"questions": store["interview_qs"].get(candidate_id)}
 
 
 @app.post("/api/interview")
 async def generate_interview(body: InterviewRequest):
     if body.candidate_id not in store["resumes"]:
         raise HTTPException(status_code=404, detail="Candidate not found.")
-    raise HTTPException(
-        status_code=503,
-        detail="Interview kit is not configured yet. Complete Step 6 and 9 (LLM client + interview).",
-    )
+
+    jd_id = _resolve_jd_id(body.jd_id)
+    if not jd_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Select a job description on the Matching page first.",
+        )
+
+    resume = store["resumes"][body.candidate_id]
+    jd_text = store["jds"][jd_id].get("text", "")
+    weaknesses = _weaknesses_for_candidate(body.candidate_id, jd_id)
+
+    try:
+        questions = generate_questions(
+            resume.get("text", ""),
+            jd_text,
+            weaknesses,
+        )
+    except LLMError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Interview generation failed. Please try again.",
+        ) from exc
+
+    store["interview_qs"][body.candidate_id] = questions
+    return {"questions": questions, "candidate_id": body.candidate_id, "jd_id": jd_id}
 
 
 @app.get("/api/interview/export")
@@ -274,10 +379,31 @@ async def get_settings():
     return _key_status()
 
 
+@app.post("/api/llm/test")
+async def test_llm():
+    """Quick connectivity check for the configured LLM provider."""
+    try:
+        client = get_client()
+        reply = client.complete(
+            "Reply with exactly one word: OK",
+            system="You are a concise assistant.",
+            json_mode=False,
+        )
+        return {"ok": True, "provider": client.provider, "reply": reply.strip()[:200]}
+    except LLMError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="AI service is temporarily unavailable. Check your API key and try again.",
+        ) from exc
+
+
 @app.delete("/api/clear")
 async def clear_all():
     for key in store:
         store[key].clear()
+    LLMClient.clear_cache()
     return {"ok": True, "message": "All data cleared."}
 
 
