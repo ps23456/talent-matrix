@@ -1,22 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    (function () {
+      var t = localStorage.getItem('tm-theme');
+      document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    })();
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TalentMatch AI</title>
+  <title>The Talent Matrix</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    :root {
+    :root, [data-theme="dark"] {
       --sb: #0B0F1A; --bg: #0F1623; --surf: #141C2E; --card: #1A2338;
       --hover: #1E2942; --pri: #6366F1; --pri2: #8B5CF6;
       --pria: rgba(99,102,241,0.12); --prib: rgba(99,102,241,0.25);
       --grn: #10B981; --amb: #F59E0B; --red: #EF4444;
       --tx: #E8EEFF; --t2: #8896B8; --t3: #4A5570;
       --bd: rgba(99,102,241,0.14); --bd2: rgba(99,102,241,0.30);
+      --active-tx: #A5B4FC;
+      --overlay: rgba(0,0,0,0.5);
+      --modal-overlay: rgba(0,0,0,0.65);
+      --loader-bg: rgba(11,15,26,0.92);
+      --toast-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      --danger-tx: #FCA5A5;
+      --danger-bg: rgba(239,68,68,0.12);
+      --danger-bd: rgba(239,68,68,0.3);
+      --spinner-track: rgba(255,255,255,0.25);
+      --spinner-top: #fff;
+      --pill-amber-fg: #FCD34D;
+      --pill-amber-bg: rgba(245,158,11,0.08);
+      --pill-amber-bd: rgba(245,158,11,0.3);
+      --sidebar-bg: #0B0F1A;
+      --sidebar-tx: #E8EEFF;
+      --sidebar-t2: #8896B8;
+      --sidebar-t3: #4A5570;
+      --sidebar-hover: #1E2942;
+      --sidebar-active-bg: rgba(99,102,241,0.12);
+      --sidebar-active-tx: #A5B4FC;
+      --sidebar-active-bd: rgba(99,102,241,0.22);
+      --sidebar-bd: rgba(99,102,241,0.14);
+      --sidebar-badge-bg: #1A2338;
+      --sidebar-badge-active-bg: rgba(99,102,241,0.25);
+      --sidebar-badge-active-tx: #C7D2FE;
+      --topbar-bg: #0B0F1A;
       --sb-w: 220px;
+    }
+    [data-theme="light"] {
+      --sb: #FFFFFF; --bg: #F1F5F9; --surf: #FFFFFF; --card: #F8FAFC;
+      --hover: #E2E8F0; --pri: #6366F1; --pri2: #8B5CF6;
+      --pria: rgba(99,102,241,0.10); --prib: rgba(99,102,241,0.18);
+      --grn: #059669; --amb: #D97706; --red: #DC2626;
+      --tx: #0F172A; --t2: #475569; --t3: #94A3B8;
+      --bd: rgba(99,102,241,0.18); --bd2: rgba(99,102,241,0.32);
+      --active-tx: #4338CA;
+      --overlay: rgba(15,23,42,0.35);
+      --modal-overlay: rgba(15,23,42,0.45);
+      --loader-bg: rgba(241,245,249,0.96);
+      --toast-shadow: 0 8px 28px rgba(15,23,42,0.10);
+      --danger-tx: #DC2626;
+      --danger-bg: rgba(239,68,68,0.08);
+      --danger-bd: rgba(239,68,68,0.28);
+      --spinner-track: rgba(15,23,42,0.12);
+      --spinner-top: var(--pri);
+      --pill-amber-fg: #B45309;
+      --pill-amber-bg: rgba(245,158,11,0.12);
+      --pill-amber-bd: rgba(245,158,11,0.35);
+      --sidebar-bg: linear-gradient(175deg, #1E40AF 0%, #2563EB 38%, #3B82F6 72%, #60A5FA 100%);
+      --sidebar-tx: #FFFFFF;
+      --sidebar-t2: rgba(255,255,255,0.9);
+      --sidebar-t3: rgba(255,255,255,0.58);
+      --sidebar-hover: rgba(255,255,255,0.14);
+      --sidebar-active-bg: rgba(255,255,255,0.24);
+      --sidebar-active-tx: #FFFFFF;
+      --sidebar-active-bd: rgba(255,255,255,0.35);
+      --sidebar-bd: rgba(255,255,255,0.2);
+      --sidebar-badge-bg: rgba(255,255,255,0.18);
+      --sidebar-badge-active-bg: rgba(255,255,255,0.32);
+      --sidebar-badge-active-tx: #FFFFFF;
+      --topbar-bg: #FFFFFF;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
@@ -31,9 +97,10 @@
 
     /* ── Sidebar ── */
     .sidebar {
-      background: var(--sb); border-right: 1px solid var(--bd);
+      background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-bd);
       display: flex; flex-direction: column; padding: 18px 12px;
       overflow-y: auto;
+      color: var(--sidebar-tx);
     }
     .logo-block { padding: 4px 8px 20px; }
     .logo-row { display: flex; align-items: center; gap: 10px; }
@@ -43,36 +110,39 @@
       display: flex; align-items: center; justify-content: center; font-size: 18px;
     }
     .logo-name {
-      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px;
-      line-height: 1.2; letter-spacing: -0.02em;
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 13px;
+      line-height: 1.25; letter-spacing: -0.02em; color: var(--sidebar-tx);
     }
-    .logo-tag { font-size: 10px; color: var(--t3); margin-top: 2px; }
+    .logo-tag { font-size: 10px; color: var(--sidebar-t3); margin-top: 2px; }
     .sb-section {
       font-size: 9px; font-weight: 500; letter-spacing: 0.12em;
-      color: var(--t3); padding: 14px 10px 6px; text-transform: uppercase;
+      color: var(--sidebar-t3); padding: 14px 10px 6px; text-transform: uppercase;
     }
     .sb-item {
       display: flex; align-items: center; justify-content: space-between;
       padding: 9px 12px; margin: 2px 0; border-radius: 9px;
-      color: var(--t2); font-size: 13px; cursor: pointer;
+      color: var(--sidebar-t2); font-size: 13px; cursor: pointer;
       border: 1px solid transparent; transition: all 0.15s;
       user-select: none;
     }
-    .sb-item:hover { background: var(--hover); color: var(--tx); }
+    .sb-item:hover { background: var(--sidebar-hover); color: var(--sidebar-tx); }
     .sb-item.active {
-      background: var(--pria); color: #A5B4FC;
-      border-color: rgba(99,102,241,0.22);
+      background: var(--sidebar-active-bg); color: var(--sidebar-active-tx);
+      border-color: var(--sidebar-active-bd);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .sb-badge {
       font-family: 'JetBrains Mono', monospace; font-size: 10px;
-      background: var(--card); color: var(--t2); padding: 2px 7px;
-      border-radius: 10px; min-width: 20px; text-align: center;
+      background: var(--sidebar-badge-bg); color: var(--sidebar-t2);
+      padding: 2px 7px; border-radius: 10px; min-width: 20px; text-align: center;
     }
-    .sb-item.active .sb-badge { background: var(--prib); color: #C7D2FE; }
+    .sb-item.active .sb-badge {
+      background: var(--sidebar-badge-active-bg); color: var(--sidebar-badge-active-tx);
+    }
     .sb-spacer { flex: 1; }
     .sb-user {
       display: flex; align-items: center; gap: 10px;
-      padding: 12px 8px; border-top: 1px solid var(--bd); margin-top: 8px;
+      padding: 12px 8px; border-top: 1px solid var(--sidebar-bd); margin-top: 8px;
     }
     .sb-avatar {
       width: 34px; height: 34px; border-radius: 50%;
@@ -88,7 +158,7 @@
     .main { display: flex; flex-direction: column; overflow: hidden; }
     .topbar {
       position: sticky; top: 0; z-index: 50;
-      background: var(--sb); border-bottom: 1px solid var(--bd);
+      background: var(--topbar-bg); border-bottom: 1px solid var(--bd);
       padding: 14px 24px; display: flex; align-items: center;
       gap: 16px; flex-shrink: 0;
     }
@@ -101,7 +171,7 @@
       font-size: 11px; color: var(--t2); background: var(--card);
       border: 1px solid var(--bd); padding: 4px 12px; border-radius: 20px;
     }
-    .pill.amber { color: #FCD34D; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
+    .pill.amber { color: var(--pill-amber-fg); border-color: var(--pill-amber-bd); background: var(--pill-amber-bg); }
     .topbar-actions { margin-left: auto; display: flex; gap: 10px; }
 
     .content {
@@ -139,7 +209,7 @@
       font-family: 'DM Sans', sans-serif; font-size: 12px;
       padding: 6px 14px; cursor: pointer; transition: all 0.15s;
     }
-    .btn-ghost:hover { background: var(--pria); color: #A5B4FC; border-color: var(--bd2); }
+    .btn-ghost:hover { background: var(--pria); color: var(--active-tx); border-color: var(--bd2); }
 
     .stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
 
@@ -166,7 +236,7 @@
       transition: all 0.15s;
     }
     .jd-tab.active {
-      background: var(--pria); color: #A5B4FC; border-color: var(--bd2);
+      background: var(--pria); color: var(--active-tx); border-color: var(--bd2);
     }
     .jd-paste { display: none; }
     .jd-paste.active { display: block; }
@@ -240,13 +310,8 @@
     .candidate-card {
       background: var(--surf); border: 1px solid var(--bd);
       border-radius: 14px; padding: 20px; transition: border-color 0.2s;
-      animation: cardIn 0.35s ease backwards;
     }
     .candidate-card:hover { border-color: var(--bd2); }
-    @keyframes cardIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
     .card-header { display: flex; gap: 16px; align-items: flex-start; }
     .c-avatar {
       width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
@@ -274,9 +339,34 @@
     .verdict-tag.top { background: rgba(16,185,129,0.14); color: #34D399; }
     .verdict-tag.hold { background: rgba(245,158,11,0.14); color: #FCD34D; }
     .verdict-tag.reject { background: rgba(239,68,68,0.14); color: #FCA5A5; }
+    .verdict-tag.semantic { background: rgba(99,102,241,0.14); color: #A5B4FC; }
+    .auth-row {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      margin: 10px 0; font-size: 12px;
+    }
+    .auth-score {
+      font-family: 'JetBrains Mono', monospace; font-weight: 600;
+      padding: 4px 10px; border-radius: 8px; background: var(--card);
+      border: 1px solid var(--bd);
+    }
+    .auth-score.high { color: var(--grn); border-color: rgba(16,185,129,0.35); }
+    .auth-score.mid { color: var(--amb); }
+    .auth-score.low { color: var(--red); border-color: rgba(239,68,68,0.35); }
+    .auth-flag { font-size: 10px; color: var(--t3); font-style: italic; }
+    .evidence-list { margin: 10px 0 14px; display: flex; flex-direction: column; gap: 8px; }
+    .evidence-item {
+      padding: 8px 10px; background: var(--card); border-radius: 8px;
+      border-left: 3px solid var(--pri); font-size: 11px; line-height: 1.45;
+    }
+    .evidence-item .ev-req { font-weight: 500; color: var(--t2); }
+    .evidence-item .ev-quote { color: var(--t3); margin-top: 4px; font-style: italic; }
+    .semantic-pill {
+      font-size: 10px; padding: 3px 8px; border-radius: 8px;
+      background: rgba(99,102,241,0.12); color: var(--active-tx, #A5B4FC);
+    }
     .better-fit-pill {
       font-size: 10px; padding: 3px 10px; border-radius: 20px;
-      background: rgba(99,102,241,0.14); color: #A5B4FC; margin-top: 6px;
+      background: var(--pria); color: var(--active-tx); margin-top: 6px;
       display: inline-block;
     }
     .c-summary { color: var(--t2); font-size: 13px; line-height: 1.55; margin: 14px 0; }
@@ -365,7 +455,7 @@
       background: var(--card); border: 1px solid var(--bd); color: var(--t2);
       cursor: pointer; transition: all 0.15s;
     }
-    .chip:hover { background: var(--pria); color: #A5B4FC; border-color: var(--bd2); }
+    .chip:hover { background: var(--pria); color: var(--active-tx); border-color: var(--bd2); }
     .chat-input-row { display: flex; gap: 8px; }
     .chat-input {
       flex: 1; background: var(--card); border: 1px solid var(--bd);
@@ -424,10 +514,63 @@
       font-size: 11px; color: var(--t2); cursor: pointer;
     }
     .iq-check input { accent-color: var(--pri); }
+    .interview-hm-banner {
+      background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: var(--t2);
+    }
+    .shortlist-roster {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;
+    }
+    .shortlist-chip {
+      flex: 1; min-width: 160px; max-width: 280px; padding: 12px 14px;
+      background: var(--card); border: 1px solid var(--bd); border-radius: 12px;
+      cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .shortlist-chip.active { border-color: var(--pri); box-shadow: 0 0 0 1px var(--pri); }
+    .shortlist-chip .sc-name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+    .shortlist-chip .sc-meta { font-size: 11px; color: var(--t3); }
+    .shortlist-chip .sc-badge {
+      display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 600;
+      padding: 2px 8px; border-radius: 8px; background: rgba(16,185,129,0.14); color: #34D399;
+    }
+    .iq-candidate-panel {
+      background: var(--surf); border: 1px solid var(--bd); border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 16px;
+    }
+    .iq-candidate-panel h4 { font-family: 'Syne', sans-serif; font-size: 14px; margin-bottom: 8px; }
+    .iq-suggestions {
+      margin-top: 10px; padding: 10px 12px; background: var(--card);
+      border-radius: 8px; border-left: 3px solid var(--pri);
+    }
+    .iq-suggestions li { font-size: 12px; color: var(--t2); margin: 4px 0 4px 16px; }
+    .iq-targets { font-size: 10px; color: var(--t3); margin-top: 4px; }
+    .iq-rating-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .iq-rating-row span { font-size: 11px; color: var(--t3); }
+    .iq-star {
+      width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--bd);
+      background: var(--card); color: var(--t2); font-size: 12px; cursor: pointer;
+    }
+    .iq-star.on { background: var(--pri); color: #fff; border-color: var(--pri); }
+    .iq-note {
+      width: 100%; margin-top: 8px; min-height: 52px; resize: vertical;
+      background: var(--card); border: 1px solid var(--bd); border-radius: 8px;
+      color: var(--tx); padding: 8px 10px; font-size: 12px; font-family: inherit;
+    }
+    .iq-footer-panel {
+      margin-top: 20px; padding: 16px; background: var(--surf);
+      border: 1px solid var(--bd); border-radius: 12px;
+    }
+    .iq-footer-panel label { display: block; font-size: 12px; color: var(--t2); margin-bottom: 6px; }
+    .iq-footer-panel textarea, .iq-footer-panel select {
+      width: 100%; background: var(--card); border: 1px solid var(--bd);
+      border-radius: 8px; color: var(--tx); padding: 8px 10px; font-size: 13px;
+    }
+    .iq-footer-panel textarea { min-height: 72px; resize: vertical; font-family: inherit; }
+    .iq-footer-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 
     /* ── Settings drawer ── */
     .drawer-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      position: fixed; inset: 0; background: var(--overlay);
       z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.25s;
     }
     .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
@@ -449,8 +592,34 @@
       padding: 14px 0; border-bottom: 1px solid var(--bd);
       display: flex; justify-content: space-between; align-items: center;
     }
-    .setting-label { font-size: 13px; color: var(--t2); }
+    .setting-label { font-size: 13px; color: var(--t2); display: block; }
+    .setting-hint { font-size: 11px; color: var(--t3); margin-top: 3px; }
     .setting-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .theme-setting-row { align-items: center; }
+    .theme-switch {
+      position: relative; width: 52px; height: 28px; flex-shrink: 0; cursor: pointer;
+    }
+    .theme-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .theme-slider {
+      position: absolute; inset: 0; border-radius: 28px;
+      background: var(--card); border: 1px solid var(--bd2);
+      transition: background 0.25s, border-color 0.25s;
+    }
+    .theme-slider::before {
+      content: ''; position: absolute; width: 22px; height: 22px; left: 3px; top: 2px;
+      border-radius: 50%; background: linear-gradient(135deg, var(--pri), var(--pri2));
+      transition: transform 0.25s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .theme-switch input:checked + .theme-slider {
+      background: var(--pria); border-color: var(--pri);
+    }
+    .theme-switch input:checked + .theme-slider::before {
+      transform: translateX(24px);
+    }
+    .theme-switch input:focus-visible + .theme-slider {
+      outline: 2px solid var(--pri); outline-offset: 2px;
+    }
     .key-ok { color: var(--grn); }
     .key-miss { color: var(--red); }
     .btn-danger {
@@ -493,9 +662,316 @@
     }
     .toast.error { border-color: rgba(239,68,68,0.4); }
     .toast.success { border-color: rgba(16,185,129,0.4); }
+    .toast.info { border-color: rgba(99,102,241,0.35); }
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Loading & polish ── */
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.25);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: inline-block;
+    }
+    .spinner.lg { width: 32px; height: 32px; border-width: 3px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .page-loader {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(11,15,26,0.92); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
+      transition: opacity 0.3s ease, visibility 0.3s;
+    }
+    .page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .page-loader span { color: var(--t2); font-size: 13px; }
+
+    .btn-primary.is-loading {
+      opacity: 0.9; pointer-events: none;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .dropzone.is-busy { opacity: 0.55; pointer-events: none; }
+    .file-item { animation: fileIn 0.25s ease backwards; }
+    @keyframes fileIn {
+      from { opacity: 0; transform: translateX(-6px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .candidate-card {
+      animation: cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .log-line.active { color: #A5B4FC; }
+    .log-line.active::before { content: '▸ '; color: var(--pri); }
+
+    .msg.typing {
+      align-self: flex-start; color: var(--t2); font-style: italic;
+      background: var(--card); border: 1px solid var(--bd);
+    }
+
+    .empty-cta {
+      margin-top: 14px; display: inline-block;
+    }
+
+    .podium-dashboard {
+      display: none; margin-bottom: 20px; padding: 18px;
+      background: var(--surf); border: 1px solid var(--bd); border-radius: 14px;
+    }
+    .podium-dashboard.active { display: block; }
+    .podium-title {
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px;
+      margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+    }
+    .podium-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    }
+    @media (max-width: 900px) { .podium-row { grid-template-columns: 1fr; } }
+    .podium-slot {
+      padding: 14px; border-radius: 12px; background: var(--card);
+      border: 1px solid var(--bd); text-align: center; position: relative;
+    }
+    .podium-slot.rank-1 { border-color: rgba(245,158,11,0.45); background: rgba(245,158,11,0.06); }
+    .podium-slot.rank-2 { border-color: rgba(148,163,184,0.35); }
+    .podium-slot.rank-3 { border-color: rgba(180,83,9,0.25); }
+    .podium-medal { font-size: 28px; line-height: 1; margin-bottom: 6px; }
+    .podium-name {
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+      margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .podium-verdict {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+      padding: 8px 14px; border-radius: 20px; letter-spacing: 0.06em;
+      display: inline-block; margin: 8px 0 4px;
+    }
+    .podium-verdict.top { background: rgba(16,185,129,0.14); color: #34D399; }
+    .podium-verdict.hold { background: rgba(245,158,11,0.14); color: #FCD34D; }
+    .podium-verdict.reject { background: rgba(239,68,68,0.14); color: #FCA5A5; }
+    .podium-verdict.semantic { background: rgba(99,102,241,0.14); color: #A5B4FC; }
+    .c-verdict-stamp {
+      flex-shrink: 0; min-width: 88px; max-width: 100px;
+      padding: 14px 10px; border-radius: 12px; text-align: center;
+      font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.05em; line-height: 1.3;
+    }
+    .c-verdict-stamp.top { background: rgba(16,185,129,0.14); color: #34D399; border: 1px solid rgba(16,185,129,0.35); }
+    .c-verdict-stamp.hold { background: rgba(245,158,11,0.14); color: #FCD34D; border: 1px solid rgba(245,158,11,0.35); }
+    .c-verdict-stamp.reject { background: rgba(239,68,68,0.14); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.35); }
+    .c-verdict-stamp.semantic { background: rgba(99,102,241,0.14); color: #A5B4FC; border: 1px solid rgba(99,102,241,0.35); }
+    .podium-sub { font-size: 10px; color: var(--t3); margin-top: 6px; }
+    .podium-metrics {
+      display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .podium-metric {
+      font-size: 10px; padding: 3px 8px; border-radius: 8px;
+      background: var(--pria); color: var(--active-tx, #A5B4FC);
+    }
+    .podium-metric.must { background: rgba(16,185,129,0.12); color: #34D399; }
+    .podium-metric.nice { background: rgba(99,102,241,0.12); color: #A5B4FC; }
+
+    .req-panel {
+      display: none; margin-bottom: 16px; padding: 14px 16px;
+      background: var(--card); border: 1px solid var(--bd); border-radius: 12px;
+    }
+    .req-panel.active { display: block; }
+    .req-panel h4 {
+      font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600;
+      margin-bottom: 8px; color: var(--t2);
+    }
+    .req-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .req-cols { grid-template-columns: 1fr; } }
+    .req-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .req-tag {
+      font-size: 11px; padding: 4px 10px; border-radius: 20px;
+      border: 1px solid var(--bd);
+    }
+    .req-tag.must { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #34D399; }
+    .req-tag.nice { background: rgba(99,102,241,0.08); border-color: var(--bd2); color: var(--t2); }
+    .req-weight-note { font-size: 10px; color: var(--t3); margin-top: 10px; }
+
+    .compare-matrix-wrap {
+      display: none; margin-bottom: 20px; overflow-x: auto;
+      background: var(--surf); border: 1px solid var(--bd); border-radius: 14px; padding: 16px;
+    }
+    .compare-matrix-wrap.active { display: block; }
+    .compare-matrix-wrap h3 {
+      font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 12px;
+    }
+    .compare-table {
+      width: 100%; border-collapse: collapse; font-size: 12px; min-width: 640px;
+    }
+    .compare-table th, .compare-table td {
+      padding: 8px 10px; border-bottom: 1px solid var(--bd); text-align: center;
+    }
+    .compare-table th {
+      color: var(--t2); font-weight: 500; background: var(--card);
+      position: sticky; top: 0; z-index: 1;
+    }
+    .compare-table th:first-child, .compare-table td:first-child {
+      text-align: left; font-weight: 500; color: var(--tx);
+    }
+    .compare-table tr:hover td { background: var(--hover); }
+    .compare-table .rank-cell {
+      font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    }
+    .compare-table .score-high { color: var(--grn); }
+    .compare-table .score-mid { color: var(--amb); }
+    .compare-table .score-low { color: var(--red); }
+
+    .req-fit-row {
+      display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0;
+      font-size: 11px;
+    }
+    .req-fit-block { flex: 1; min-width: 140px; }
+    .req-fit-block strong { display: block; color: var(--t3); margin-bottom: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .req-fit-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .fit-tag { font-size: 10px; padding: 2px 8px; border-radius: 6px; }
+    .fit-tag.ok { background: rgba(16,185,129,0.12); color: #34D399; }
+    .fit-tag.miss { background: rgba(239,68,68,0.1); color: #FCA5A5; }
+    .rank-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      padding: 2px 8px; border-radius: 8px; background: var(--pria); color: var(--pri);
+    }
+
+    .match-progress {
+      display: none; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--t2); margin-bottom: 12px;
+    }
+    .match-progress.active { display: flex; }
+
+    /* ── Overview dashboard ── */
+    .overview-hero {
+      background: linear-gradient(135deg, var(--pria) 0%, rgba(99,102,241,0.04) 50%, transparent 100%);
+      border: 1px solid var(--bd);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .overview-hero h2 {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      font-size: clamp(22px, 3vw, 30px);
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+      line-height: 1.35;
+      color: var(--t2);
+    }
+    .overview-hero h2 .welcome-name {
+      font-weight: 600;
+      color: var(--tx);
+      letter-spacing: -0.02em;
+    }
+    .overview-hero .welcome-sub { font-size: 14px; color: var(--t2); max-width: 520px; line-height: 1.55; }
+    .overview-hero .welcome-meta {
+      font-size: 12px; color: var(--t3); margin-top: 10px;
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    }
+    .overview-hero .welcome-meta span {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; background: var(--card); border-radius: 8px; border: 1px solid var(--bd);
+    }
+    .dash-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .dash-stat {
+      background: var(--surf);
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .dash-stat:hover { border-color: var(--pri); transform: translateY(-1px); }
+    .dash-stat .ds-val {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+    .dash-stat .ds-label { font-size: 11px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .dash-stat.top .ds-val { color: #34D399; }
+    .dash-stat.hold .ds-val { color: #FCD34D; }
+    .dash-stat.reject .ds-val { color: #FCA5A5; }
+    .dash-stat.files .ds-val { color: var(--pri); }
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 960px) {
+      .overview-grid { grid-template-columns: 1fr; }
+    }
+    .dash-panel {
+      background: var(--surf);
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .dash-panel-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--bd);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .dash-panel-head h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .dash-panel-body { padding: 14px 18px; max-height: 280px; overflow-y: auto; }
+    .dash-list-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--bd);
+      font-size: 13px;
+    }
+    .dash-list-item:last-child { border-bottom: none; }
+    .dash-pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .pipe-step {
+      flex: 1;
+      min-width: 140px;
+      padding: 14px 16px;
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--t2);
+    }
+    .pipe-step.done { border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.06); }
+    .pipe-step strong { display: block; color: var(--tx); font-size: 13px; margin-bottom: 4px; }
+    .pipe-step .pipe-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--t3);
+      margin-bottom: 6px;
+    }
+    .overview-quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     @media (max-width: 900px) {
@@ -505,20 +981,27 @@
   </style>
 </head>
 <body>
+  <div id="page-loader" class="page-loader">
+    <div class="spinner lg"></div>
+    <span>Loading The Talent Matrix…</span>
+  </div>
   <div class="app">
     <aside class="sidebar">
       <div class="logo-block">
         <div class="logo-row">
           <div class="logo-mark">🎯</div>
           <div>
-            <div class="logo-name">TalentMatch AI</div>
+            <div class="logo-name">The Talent Matrix</div>
             <div class="logo-tag">Hire smarter, not harder.</div>
           </div>
         </div>
       </div>
 
       <div class="sb-section">Workspace</div>
-      <div class="sb-item active" data-page="upload" onclick="navigate('upload')">
+      <div class="sb-item active" data-page="overview" onclick="navigate('overview')">
+        <span>Overview</span>
+      </div>
+      <div class="sb-item" data-page="upload" onclick="navigate('upload')">
         <span>Upload Files</span>
         <span class="sb-badge" id="badge-resumes">0</span>
       </div>
@@ -542,9 +1025,9 @@
 
       <div class="sb-spacer"></div>
       <div class="sb-user">
-        <div class="sb-avatar">JD</div>
+        <div class="sb-avatar">PS</div>
         <div>
-          <div class="sb-user-name">Jane Doe</div>
+          <div class="sb-user-name">Priyanshi Shah</div>
           <div class="sb-user-role">Hiring Manager</div>
         </div>
         <span class="sb-kebab">⋮</span>
@@ -553,14 +1036,19 @@
 
     <div class="main">
       <header class="topbar">
-        <h1 class="topbar-title" id="page-title">Upload Files</h1>
+        <h1 class="topbar-title" id="page-title">Overview</h1>
         <div class="topbar-pills" id="topbar-pills"></div>
         <div class="topbar-actions" id="topbar-actions"></div>
       </header>
 
       <div class="content">
+        <!-- PAGE: Overview -->
+        <div id="page-overview" class="page active">
+          <div id="overview-root"></div>
+        </div>
+
         <!-- PAGE: Upload -->
-        <div id="page-upload" class="page active">
+        <div id="page-upload" class="page">
           <div class="stats-row" id="upload-stats"></div>
           <div class="upload-grid">
             <div class="panel">
@@ -601,9 +1089,16 @@
         <div id="page-match" class="page">
           <div class="match-controls">
             <select class="match-select" id="jd-select"></select>
-            <button class="btn-primary" id="run-match-btn" onclick="runMatching()">🚀 Run AI Matching</button>
+            <button class="btn-primary" id="run-match-btn" onclick="runMatching(event)" title="Hold Shift to force a full re-score">🚀 Run AI Matching</button>
+          </div>
+          <div class="match-progress" id="match-progress">
+            <span class="spinner"></span>
+            <span id="match-progress-text">Scoring candidates with AI…</span>
           </div>
           <div class="log-area" id="log-area"></div>
+          <div class="podium-dashboard" id="podium-dashboard"></div>
+          <div class="req-panel" id="req-panel"></div>
+          <div class="compare-matrix-wrap" id="compare-matrix-wrap"></div>
           <div class="candidates" id="candidates-container"></div>
         </div>
 
@@ -638,16 +1133,39 @@
 
         <!-- PAGE: Interview -->
         <div id="page-interview" class="page">
+          <div class="interview-hm-banner" id="interview-hm-banner">
+            <strong>Hiring Manager — Interview Pack</strong> · Shortlisted candidates only (Overall ≥ 70).
+            Questions are generated from each resume’s claims vs the selected JD — not a fixed question bank.
+          </div>
           <div class="interview-top">
             <select class="interview-select" id="interview-candidate-select"></select>
-            <button class="btn-primary" onclick="generateInterview()">Generate Questions</button>
-            <button class="btn-ghost" onclick="exportInterview()">Export</button>
+            <button class="btn-primary" onclick="generateInterview()">Generate Interview Pack</button>
+            <button class="btn-ghost" onclick="saveInterviewPack()">Save notes & ratings</button>
+            <button class="btn-ghost" onclick="exportInterview()">Export .txt</button>
           </div>
+          <div id="shortlist-roster" class="shortlist-roster"></div>
+          <div id="iq-candidate-panel" class="iq-candidate-panel" style="display:none"></div>
           <div class="iq-sections" id="iq-sections">
             <div class="empty-state" id="interview-empty">
               <div class="empty-icon">🎤</div>
-              <h3>No questions yet</h3>
-              <p>Select a candidate and click Generate Questions</p>
+              <h3>No interview pack yet</h3>
+              <p>Run AI Matching, then open a shortlisted candidate here.</p>
+            </div>
+          </div>
+          <div id="iq-footer-panel" class="iq-footer-panel" style="display:none">
+            <label for="iq-global-notes">Interviewer notes (session)</label>
+            <textarea id="iq-global-notes" placeholder="Overall impressions, culture fit, concerns…"></textarea>
+            <label for="iq-final-rec" style="margin-top:12px">Final recommendation</label>
+            <select id="iq-final-rec">
+              <option value="">— Select after interview —</option>
+              <option value="strong_hire">Strong hire</option>
+              <option value="hire">Hire</option>
+              <option value="hold">Hold / second round</option>
+              <option value="no_hire">Do not hire</option>
+            </select>
+            <div class="iq-footer-actions">
+              <button class="btn-primary" onclick="saveInterviewPack()">Save</button>
+              <button class="btn-ghost" onclick="exportInterview()">Download pack</button>
             </div>
           </div>
         </div>
@@ -660,6 +1178,16 @@
     <div class="drawer-head">
       <h2>Settings</h2>
       <button class="drawer-close" onclick="closeSettings()">×</button>
+    </div>
+    <div class="setting-row theme-setting-row">
+      <div>
+        <span class="setting-label">Appearance</span>
+        <div class="setting-hint" id="theme-mode-label">Dark mode</div>
+      </div>
+      <label class="theme-switch" title="Toggle light / dark theme">
+        <input type="checkbox" id="theme-toggle" onchange="toggleTheme(this.checked)" aria-label="Light mode" />
+        <span class="theme-slider"></span>
+      </label>
     </div>
     <div class="setting-row">
       <span class="setting-label">LLM Provider</span>
@@ -679,13 +1207,13 @@
       <span class="setting-val key-miss" id="set-mistral">❌ Not set</span>
     </div>
     <button class="btn-danger" onclick="clearAllData()">Clear All Data</button>
-    <div class="app-version">TalentMatch AI v1.0.0</div>
+    <div class="app-version">The Talent Matrix v1.0.0</div>
   </aside>
 
   <div class="modal-backdrop" id="compare-modal" onclick="if(event.target===this)closeCompareModal()">
     <div class="modal" onclick="event.stopPropagation()">
       <div class="modal-head">
-        <h2>Compare Top 3</h2>
+        <h2 id="compare-modal-title">Compare Candidates</h2>
         <button class="drawer-close" onclick="closeCompareModal()">×</button>
       </div>
       <div class="chart-wrap"><canvas id="radar-chart"></canvas></div>
@@ -715,12 +1243,15 @@
       resumes: [],
       jds: [],
       matchResults: [],
+      jdRequirements: null,
+      scoringWeights: null,
       selectedJdId: null,
-      activePage: 'upload',
+      activePage: 'overview',
       chatTarget: null,
       interviewTarget: null,
       chatHistory: {},
-      interviewQuestions: null,
+      interviewPack: null,
+      interviewShortlisted: [],
       matchHasRun: false,
     };
 
@@ -750,11 +1281,12 @@
       }),
       deleteResume: (id) => API.request(`/api/resume/${id}`, { method: 'DELETE' }),
       deleteJd: (id) => API.request(`/api/jd/${id}`, { method: 'DELETE' }),
-      match: (jdId) => API.request('/api/match', {
+      match: (jdId, force = false) => API.request('/api/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jd_id: jdId }),
+        body: JSON.stringify({ jd_id: jdId, force }),
       }),
+      getMatchResults: (jdId) => API.request(`/api/match/${jdId}`),
       getChatHistory: (candidateId) => API.request(`/api/chat/${candidateId}`),
       chat: (candidateId, message) => API.request('/api/chat', {
         method: 'POST',
@@ -762,10 +1294,16 @@
         body: JSON.stringify({ candidate_id: candidateId, message }),
       }),
       getInterview: (candidateId) => API.request(`/api/interview/${candidateId}`),
+      getShortlistedInterview: (jdId) => API.request(`/api/interview/shortlisted?jd_id=${encodeURIComponent(jdId)}`),
       interview: (candidateId, jdId) => API.request('/api/interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ candidate_id: candidateId, jd_id: jdId || null }),
+      }),
+      updateInterview: (candidateId, body) => API.request(`/api/interview/${candidateId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       }),
       settings: () => API.request('/api/settings'),
       testLlm: () => API.request('/api/llm/test', { method: 'POST' }),
@@ -773,11 +1311,15 @@
     };
 
     const PAGE_TITLES = {
+      overview: 'Overview',
       upload: 'Upload Files',
       match: 'AI Matching',
       chat: 'Chat with Resume',
       interview: 'Interview Kit',
     };
+
+    const HM_NAME = 'Priyanshi Shah';
+    const HM_ROLE = 'Hiring Manager';
 
     let radarChart = null;
 
@@ -793,26 +1335,96 @@
       return 'var(--red)';
     }
 
+    const VERDICT_SORT_ORDER = { TOP_MATCH: 0, HOLD: 1, REJECT: 2, SEMANTIC_ONLY: 3 };
+
+    function verdictFromScore(score) {
+      const s = Number(score) || 0;
+      if (s >= 70) return 'TOP_MATCH';
+      if (s >= 50) return 'HOLD';
+      return 'REJECT';
+    }
+
+    /** Status is driven by Overall % (must/nice/criteria blend), not Semantic %. */
+    function statusDriverScore(c) {
+      if (c.llm_scored) return Number(c.overall_score) || 0;
+      const sem = c.semantic_score_pct ?? (c.semantic_score != null ? Math.round(c.semantic_score * 100) : null);
+      return sem != null ? sem : 0;
+    }
+
+    function normalizeCandidateVerdict(c) {
+      const driver = statusDriverScore(c);
+      return { ...c, verdict: verdictFromScore(driver) };
+    }
+
     function verdictClass(v) {
       if (v === 'TOP_MATCH') return 'top';
       if (v === 'HOLD') return 'hold';
+      if (v === 'SEMANTIC_ONLY') return 'semantic';
       return 'reject';
     }
 
     function verdictLabel(v) {
-      if (v === 'TOP_MATCH') return 'TOP MATCH';
-      if (v === 'HOLD') return 'HOLD';
-      return 'REJECT';
+      if (v === 'TOP_MATCH') return 'SHORTLISTED';
+      if (v === 'HOLD') return 'IN REVIEW';
+      if (v === 'SEMANTIC_ONLY') return 'SEMANTIC ONLY';
+      return 'REJECTED';
     }
 
+    function authScoreClass(score) {
+      if (score == null) return '';
+      if (score >= 75) return 'high';
+      if (score >= 50) return 'mid';
+      return 'low';
+    }
+
+    function renderEvidence(evidence) {
+      if (!evidence || !evidence.length) return '';
+      const items = evidence.slice(0, 5).map(ev => `
+        <div class="evidence-item">
+          <div class="ev-req">${escHtml(ev.requirement || '')} ${ev.matched ? '✓' : '✗'}</div>
+          ${ev.quote ? `<div class="ev-quote">"${escHtml(ev.quote)}"</div>` : ''}
+        </div>`).join('');
+      return `<div class="evidence-list"><strong style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em">Evidence</strong>${items}</div>`;
+    }
+
+    let toastTimer = null;
     function showToast(msg, type = 'info') {
       const existing = document.querySelector('.toast');
       if (existing) existing.remove();
+      if (toastTimer) clearTimeout(toastTimer);
       const t = document.createElement('div');
       t.className = `toast ${type}`;
       t.textContent = msg;
       document.body.appendChild(t);
-      setTimeout(() => t.remove(), 4000);
+      toastTimer = setTimeout(() => { t.remove(); toastTimer = null; }, 4000);
+    }
+
+    function setBtnLoading(btn, loading, busyLabel) {
+      if (!btn) return;
+      if (!btn.dataset.labelIdle) btn.dataset.labelIdle = btn.textContent;
+      if (loading) {
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> ${busyLabel || 'Working…'}`;
+      } else {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        btn.textContent = btn.dataset.labelIdle;
+      }
+    }
+
+    function emptyStateHtml(icon, title, desc, ctaHtml = '') {
+      return `
+        <div class="empty-state">
+          <div class="empty-icon">${icon}</div>
+          <h3>${title}</h3>
+          <p style="font-size:13px;color:var(--t3);max-width:320px;margin:0 auto">${desc}</p>
+          ${ctaHtml ? `<div class="empty-cta">${ctaHtml}</div>` : ''}
+        </div>`;
+    }
+
+    function hidePageLoader() {
+      document.getElementById('page-loader')?.classList.add('hidden');
     }
 
     function escHtml(str) {
@@ -842,8 +1454,47 @@
         renderJdList();
         renderChatSelect();
         renderInterviewSelect();
+        updateJdSelect();
+        await loadMatchResults();
       } catch (e) {
         showToast(e.message, 'error');
+      }
+    }
+
+    async function loadMatchResults() {
+      const jdId = appState.selectedJdId || appState.jds[0]?.id;
+      if (!jdId) {
+        appState.matchResults = [];
+        appState.jdRequirements = null;
+        appState.matchHasRun = false;
+        renderCandidates();
+        updateTopbar();
+        return;
+      }
+      try {
+        const data = await API.getMatchResults(jdId);
+        if (data.has_results && data.results?.length) {
+          appState.matchResults = data.results;
+          appState.jdRequirements = data.requirements || null;
+          appState.scoringWeights = data.scoring_weights || null;
+          appState.matchHasRun = true;
+        } else {
+          appState.matchResults = [];
+          appState.jdRequirements = data.requirements || null;
+          appState.matchHasRun = false;
+        }
+        renderCandidates();
+        if (jdId) {
+          try {
+            const sl = await API.getShortlistedInterview(jdId);
+            appState.interviewShortlisted = sl.candidates || [];
+          } catch (_) { /* optional */ }
+        }
+        updateTopbar();
+      } catch (_) {
+        appState.matchResults = [];
+        appState.matchHasRun = false;
+        updateTopbar();
       }
     }
 
@@ -873,11 +1524,171 @@
       });
       document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
       updateTopbar();
+      if (page === 'overview') renderOverview();
       if (page === 'chat') renderChat();
       if (page === 'interview') {
+        loadShortlistedRoster();
         renderInterviewSelect();
         loadInterviewForCandidate();
       }
+    }
+
+    function greetingTime() {
+      const h = new Date().getHours();
+      if (h < 12) return 'Good morning';
+      if (h < 17) return 'Good afternoon';
+      return 'Good evening';
+    }
+
+    function getDashboardBuckets() {
+      const rows = appState.matchHasRun
+        ? sortedMatchResults().map(normalizeCandidateVerdict)
+        : [];
+      const buckets = { shortlisted: [], inReview: [], rejected: [], other: [] };
+      rows.forEach(c => {
+        if (c.verdict === 'TOP_MATCH') buckets.shortlisted.push(c);
+        else if (c.verdict === 'HOLD') buckets.inReview.push(c);
+        else if (c.verdict === 'REJECT') buckets.rejected.push(c);
+        else buckets.other.push(c);
+      });
+      return buckets;
+    }
+
+    function renderOverview() {
+      const root = document.getElementById('overview-root');
+      if (!root) return;
+
+      const buckets = getDashboardBuckets();
+      const jd = appState.jds.find(j => j.id === appState.selectedJdId) || appState.jds[0];
+      const roleTitle = jd?.title || 'No role selected';
+      const ocr = appState.resumes.filter(r => r.ocr_used).length;
+      const hasUploads = appState.resumes.length > 0 || appState.jds.length > 0;
+      const pipeMatch = appState.matchHasRun;
+      const pipeInterview = appState.interviewShortlisted.length > 0
+        || buckets.shortlisted.some(c => appState.interviewPack);
+
+      const resumeList = appState.resumes.length
+        ? appState.resumes.map(r => `
+          <div class="dash-list-item">
+            <span class="file-dot ${r.ocr_used ? 'amber' : 'green'}"></span>
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${escHtml(r.name)}</span>
+            <span style="font-size:11px;color:var(--t3)">${r.size_kb} KB</span>
+          </div>`).join('')
+        : '<p style="font-size:12px;color:var(--t3)">No resumes uploaded yet.</p>';
+
+      const jdList = appState.jds.length
+        ? appState.jds.map(j => `
+          <div class="dash-list-item">
+            <span class="file-dot green"></span>
+            <span style="flex:1">${escHtml(j.title)}</span>
+            ${j.id === appState.selectedJdId ? '<span class="pill" style="font-size:10px">Active</span>' : ''}
+          </div>`).join('')
+        : '<p style="font-size:12px;color:var(--t3)">No job descriptions yet.</p>';
+
+      function pipelineList(items, emptyMsg, scoreKey) {
+        if (!items.length) return `<p style="font-size:12px;color:var(--t3)">${emptyMsg}</p>`;
+        return items.slice(0, 8).map(c => `
+          <div class="dash-list-item" style="cursor:pointer" onclick="navigate('match')">
+            <span style="flex:1;font-weight:500">${escHtml(c.candidate_name)}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2)">${c[scoreKey] ?? '—'}%</span>
+            <span class="verdict-tag ${verdictClass(c.verdict)}" style="font-size:9px">${verdictLabel(c.verdict)}</span>
+          </div>`).join('');
+      }
+
+      root.innerHTML = `
+        <div class="overview-hero">
+          <div>
+            <h2>${greetingTime()}, <span class="welcome-name">${escHtml(HM_NAME)}</span></h2>
+            <p class="welcome-sub">Welcome to <strong>The Talent Matrix</strong>. You’re signed in as <strong>${escHtml(HM_ROLE)}</strong> — here’s your hiring workspace at a glance.</p>
+            <div class="welcome-meta">
+              <span>🎯 Active role: ${escHtml(roleTitle)}</span>
+              <span>📅 ${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+            </div>
+          </div>
+          <div class="overview-quick">
+            <button class="btn-primary" onclick="navigate('upload')">+ Upload</button>
+            <button class="btn-ghost" onclick="navigate('match')">Run Matching</button>
+          </div>
+        </div>
+
+        <div class="dash-pipeline">
+          <div class="pipe-step ${hasUploads ? 'done' : ''}">
+            <div class="pipe-num">Step 1</div>
+            <strong>Upload</strong>
+            ${appState.resumes.length} resume${appState.resumes.length !== 1 ? 's' : ''}, ${appState.jds.length} JD${appState.jds.length !== 1 ? 's' : ''}
+          </div>
+          <div class="pipe-step ${pipeMatch ? 'done' : ''}">
+            <div class="pipe-num">Step 2</div>
+            <strong>AI Matching</strong>
+            ${pipeMatch ? `${appState.matchResults.length} scored` : 'Not run yet'}
+          </div>
+          <div class="pipe-step ${buckets.shortlisted.length ? 'done' : ''}">
+            <div class="pipe-num">Step 3</div>
+            <strong>Shortlist</strong>
+            ${buckets.shortlisted.length} ready for interview
+          </div>
+          <div class="pipe-step ${pipeInterview ? 'done' : ''}">
+            <div class="pipe-num">Step 4</div>
+            <strong>Interview pack</strong>
+            ${pipeInterview ? 'In progress' : 'Awaiting shortlist'}
+          </div>
+        </div>
+
+        <div class="dash-stat-grid">
+          <div class="dash-stat files" onclick="navigate('upload')" title="View uploads">
+            <div class="ds-val">${appState.resumes.length}</div>
+            <div class="ds-label">Resumes uploaded</div>
+          </div>
+          <div class="dash-stat files" onclick="navigate('upload')">
+            <div class="ds-val">${appState.jds.length}</div>
+            <div class="ds-label">Job descriptions</div>
+          </div>
+          <div class="dash-stat top" onclick="navigate('match')">
+            <div class="ds-val">${buckets.shortlisted.length}</div>
+            <div class="ds-label">Shortlisted (≥70)</div>
+          </div>
+          <div class="dash-stat hold" onclick="navigate('match')">
+            <div class="ds-val">${buckets.inReview.length}</div>
+            <div class="ds-label">In review (50–69)</div>
+          </div>
+          <div class="dash-stat reject" onclick="navigate('match')">
+            <div class="ds-val">${buckets.rejected.length}</div>
+            <div class="ds-label">Rejected (&lt;50)</div>
+          </div>
+          ${ocr ? `<div class="dash-stat files"><div class="ds-val">${ocr}</div><div class="ds-label">OCR processed</div></div>` : ''}
+        </div>
+
+        <div class="overview-grid">
+          <div class="dash-panel">
+            <div class="dash-panel-head">
+              <h3>📂 Uploaded in workspace</h3>
+              <button class="btn-ghost" onclick="navigate('upload')">Manage</button>
+            </div>
+            <div class="dash-panel-body">
+              <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Resumes</div>
+              ${resumeList}
+              <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px">Job descriptions</div>
+              ${jdList}
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-head">
+              <h3>📊 Pipeline — ${escHtml(roleTitle)}</h3>
+              <button class="btn-ghost" onclick="navigate('match')">Open matching</button>
+            </div>
+            <div class="dash-panel-body">
+              ${!pipeMatch ? emptyStateHtml('🎯', 'No match run yet', 'Select a role and run AI Matching to populate shortlist and review queues.', '<button class="btn-primary" onclick="navigate(\'match\')">Go to AI Matching</button>') : `
+                <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Shortlisted</div>
+                ${pipelineList(buckets.shortlisted, 'No shortlisted candidates yet.', 'overall_score')}
+                <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px">In review</div>
+                ${pipelineList(buckets.inReview, 'No candidates in review.', 'overall_score')}
+                <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px">Rejected</div>
+                ${pipelineList(buckets.rejected, 'No rejected candidates.', 'overall_score')}
+              `}
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     function updateTopbar() {
@@ -890,13 +1701,24 @@
         ${ocrCount ? `<span class="pill amber">${ocrCount} OCR processed</span>` : ''}
       `;
       actions.innerHTML = '';
-      if (appState.activePage === 'match' && appState.matchResults.length >= 3) {
-        actions.innerHTML = '<button class="btn-ghost" onclick="openCompareModal()">Compare Top 3</button>';
+      if (appState.activePage === 'match' && appState.matchResults.length >= 2) {
+        const n = appState.matchResults.length;
+        actions.innerHTML = `
+          <button class="btn-ghost" onclick="scrollToCompareMatrix()">Compare All (${n})</button>
+          <button class="btn-ghost" onclick="openCompareModal()">Radar Chart</button>`;
+      } else if (appState.activePage === 'match' && appState.matchResults.length === 1) {
+        actions.innerHTML = '<button class="btn-ghost" onclick="scrollToCompareMatrix()">View Scores</button>';
       }
       if (appState.activePage === 'upload') {
         actions.innerHTML = '<button class="btn-ghost" onclick="navigate(\'match\')">Go to Matching →</button>';
       }
+      if (appState.activePage === 'overview') {
+        actions.innerHTML = `
+          <button class="btn-ghost" onclick="navigate('upload')">Upload</button>
+          <button class="btn-primary" onclick="navigate('match')">AI Matching</button>`;
+      }
       updateBadges();
+      if (appState.activePage === 'overview') renderOverview();
     }
 
     function updateBadges() {
@@ -918,7 +1740,7 @@
     function renderResumeList() {
       const list = document.getElementById('resume-file-list');
       if (!appState.resumes.length) {
-        list.innerHTML = '<div style="color:var(--t3);font-size:12px;padding:8px 0">No resumes uploaded yet</div>';
+        list.innerHTML = '<p style="color:var(--t3);font-size:12px;padding:8px 0">Drop PDFs above to get started</p>';
       } else {
         list.innerHTML = appState.resumes.map(r => `
         <div class="file-item">
@@ -937,7 +1759,7 @@
     function renderJdList() {
       const list = document.getElementById('jd-file-list');
       if (!appState.jds.length) {
-        list.innerHTML = '<div style="color:var(--t3);font-size:12px;padding:8px 0">No job descriptions yet</div>';
+        list.innerHTML = '<p style="color:var(--t3);font-size:12px;padding:8px 0">Upload or paste a JD above</p>';
       } else {
         list.innerHTML = appState.jds.map(j => `
         <div class="file-item">
@@ -1017,6 +1839,8 @@
         showToast('Please upload PDF files only', 'error');
         return;
       }
+      const zone = document.getElementById('resume-dropzone');
+      zone?.classList.add('is-busy');
       let uploaded = 0;
       for (const f of pdfs) {
         const fd = new FormData();
@@ -1027,13 +1851,15 @@
             showToast(data.warning, 'error');
           } else {
             uploaded++;
-            showToast(`Uploaded ${data.name}`, 'success');
+            if (data.info) showToast(data.info, 'success');
+            else showToast(`Uploaded ${data.name}${data.ocr_used ? ' (OCR)' : ''}`, 'success');
           }
         } catch (e) {
           showToast(`${f.name}: ${e.message}`, 'error');
         }
       }
       await loadFiles();
+      zone?.classList.remove('is-busy');
       if (uploaded > 1) showToast(`${uploaded} resumes uploaded`, 'success');
     }
 
@@ -1051,11 +1877,14 @@
         if (data.warning) {
           showToast(data.warning, 'error');
         } else {
-          showToast(`Uploaded JD: ${data.title}`, 'success');
+          if (data.info) showToast(data.info, 'success');
+          else showToast(`Uploaded JD: ${data.title}${data.ocr_used ? ' (OCR)' : ''}`, 'success');
         }
         await loadFiles();
       } catch (e) {
         showToast(e.message, 'error');
+      } finally {
+        zone?.classList.remove('is-busy');
       }
     }
 
@@ -1065,37 +1894,173 @@
       sel.innerHTML = appState.jds.map(j =>
         `<option value="${j.id}" ${j.id === appState.selectedJdId ? 'selected' : ''}>${j.title}</option>`
       ).join('');
-      sel.onchange = () => { appState.selectedJdId = sel.value; };
+      sel.onchange = () => {
+        appState.selectedJdId = sel.value;
+        loadMatchResults();
+      };
     }
 
-    function renderScoreCircle(score, id) {
-      const r = 28, c = 2 * Math.PI * r;
-      const offset = c - (score / 100) * c;
-      const color = scoreColor(score);
-      return `
-        <div class="c-score-wrap">
-          <svg class="c-score-svg" width="64" height="64" viewBox="0 0 64 64">
-            <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--card)" stroke-width="5"/>
-            <circle class="score-ring" id="ring-${id}" cx="32" cy="32" r="${r}" fill="none"
-              stroke="${color}" stroke-width="5" stroke-linecap="round"
-              stroke-dasharray="${c}" stroke-dashoffset="${c}"
-              data-circumference="${c}" data-target="${offset}"/>
-          </svg>
-          <div class="c-score-num" style="color:${color}">${score}</div>
-        </div>`;
+    function renderVerdictStamp(candidate) {
+      const c = normalizeCandidateVerdict(candidate);
+      const cls = verdictClass(c.verdict);
+      const label = verdictLabel(c.verdict);
+      return `<div class="c-verdict-stamp ${cls}" title="Rank #${c.rank || '—'}">${label}</div>`;
     }
 
     function animateRings() {
-      document.querySelectorAll('.score-ring').forEach(ring => {
-        const target = ring.dataset.target;
-        requestAnimationFrame(() => {
-          ring.style.transition = 'stroke-dashoffset 1s ease';
-          ring.style.strokeDashoffset = target;
-        });
-      });
+      /* Score rings removed — verdict stamps used instead */
     }
 
-    function renderCandidateCard(c, idx) {
+    function sortedMatchResults() {
+      return [...appState.matchResults].map(normalizeCandidateVerdict).sort((a, b) => {
+        const oa = VERDICT_SORT_ORDER[a.verdict] ?? 99;
+        const ob = VERDICT_SORT_ORDER[b.verdict] ?? 99;
+        if (oa !== ob) return oa - ob;
+        if (a.llm_scored !== b.llm_scored) return a.llm_scored ? -1 : 1;
+        return (b.overall_score || 0) - (a.overall_score || 0);
+      }).map((c, i) => ({ ...c, rank: i + 1 }));
+    }
+
+    function tableScoreClass(v) {
+      if (v >= 75) return 'score-high';
+      if (v >= 55) return 'score-mid';
+      return 'score-low';
+    }
+
+    function renderRequirementsPanel() {
+      const panel = document.getElementById('req-panel');
+      const req = appState.jdRequirements;
+      if (!appState.matchHasRun || !req) {
+        panel.classList.remove('active');
+        panel.innerHTML = '';
+        return;
+      }
+      const must = (req.must_haves || []).map(m =>
+        `<span class="req-tag must">${escHtml(m)}</span>`).join('');
+      const nice = (req.nice_to_haves || []).map(n =>
+        `<span class="req-tag nice">${escHtml(n)}</span>`).join('');
+      const w = appState.scoringWeights || {};
+      panel.innerHTML = `
+        <div class="req-cols">
+          <div>
+            <h4>Must-Haves (High weight — ${w.must_haves || '50%'})</h4>
+            <div class="req-tags">${must || '<span class="req-tag must">—</span>'}</div>
+          </div>
+          <div>
+            <h4>Nice-to-Haves (Low weight — ${w.nice_to_haves || '15%'})</h4>
+            <div class="req-tags">${nice || '<span class="req-tag nice">—</span>'}</div>
+          </div>
+        </div>
+        <div class="req-weight-note"><strong>Overall %</strong> = ${w.must_haves || '50%'} must-haves + ${w.nice_to_haves || '15%'} nice + ${w.criteria || '35%'} criteria — this sets <strong>Status</strong> (Shortlisted ≥70 · In review 50–69 · Rejected &lt;50). <em>Semantic %</em> is resume↔JD similarity only, not the hiring verdict.</div>`;
+      panel.classList.add('active');
+    }
+
+    function renderPodium() {
+      const el = document.getElementById('podium-dashboard');
+      const sorted = sortedMatchResults();
+      if (!appState.matchHasRun || sorted.length < 1) {
+        el.classList.remove('active');
+        el.innerHTML = '';
+        return;
+      }
+      const medals = ['🥇', '🥈', '🥉'];
+      const top3 = sorted.slice(0, 3).map(normalizeCandidateVerdict);
+      const slotsHtml = top3.map((c, i) => {
+        const rank = c.rank || i + 1;
+        const vCls = verdictClass(c.verdict);
+        const vLbl = verdictLabel(c.verdict);
+        return `
+          <div class="podium-slot rank-${rank}">
+            <div class="podium-medal">${medals[i] || `#${rank}`}</div>
+            <div class="podium-name" title="${escHtml(c.candidate_name)}">${escHtml(c.candidate_name)}</div>
+            <div class="podium-verdict ${vCls}">${vLbl}</div>
+            <div class="podium-sub">#${rank} for this role</div>
+            <div class="podium-metrics">
+              <span class="podium-metric" style="font-weight:700;color:var(--tx)">Overall ${c.overall_score ?? '—'}%</span>
+              <span class="podium-metric must">Must ${c.must_have_score ?? '—'}%</span>
+              <span class="podium-metric">Sem ${c.semantic_score_pct ?? '—'}%</span>
+            </div>
+          </div>`;
+      }).join('');
+      const padHtml = sorted.length < 3
+        ? Array(3 - sorted.length).fill(0).map(() => `
+          <div class="podium-slot" style="opacity:0.35">
+            <div class="podium-medal">—</div>
+            <div class="podium-name">—</div>
+            <div class="podium-sub">Upload more resumes</div>
+          </div>`).join('')
+        : '';
+      el.innerHTML = `
+        <div class="podium-title">
+          <span>🏆 Leaderboard for this role</span>
+          <span style="font-size:11px;color:var(--t3);font-weight:400">${sorted.length} candidate${sorted.length !== 1 ? 's' : ''} ranked</span>
+        </div>
+        <div class="podium-row">${slotsHtml}${padHtml}</div>`;
+      el.classList.add('active');
+    }
+
+    function renderCompareMatrix() {
+      const wrap = document.getElementById('compare-matrix-wrap');
+      const sorted = sortedMatchResults();
+      if (!appState.matchHasRun || !sorted.length) {
+        wrap.classList.remove('active');
+        wrap.innerHTML = '';
+        return;
+      }
+      const criteriaKeys = Object.keys(CRITERIA_LABELS);
+      const headerCols = sorted.map(c =>
+        `<th title="${escHtml(c.candidate_name)}">${escHtml(c.candidate_name.split(' ')[0])}<br><span style="font-size:9px;color:var(--t3)">#${c.rank || '—'}</span></th>`
+      ).join('');
+
+      function row(label, getter) {
+        const cells = sorted.map(c => {
+          const v = getter(c);
+          const cls = typeof v === 'number' ? tableScoreClass(v) : '';
+          return `<td class="${cls}">${v}</td>`;
+        }).join('');
+        return `<tr><td>${label}</td>${cells}</tr>`;
+      }
+
+      const criteriaRows = criteriaKeys.map(k =>
+        row(CRITERIA_LABELS[k], c => c.scores?.[k]?.score ?? '—')
+      ).join('');
+
+      wrap.innerHTML = `
+        <h3>📊 Compare all candidates — every aspect</h3>
+        <table class="compare-table">
+          <thead><tr><th>Metric</th>${headerCols}</tr></thead>
+          <tbody>
+            ${row('Rank', c => `<span class="rank-cell">#${c.rank || '—'}</span>`)}
+            ${row('Overall % (sets status)', c => c.overall_score ?? '—')}
+            ${row('Status', c => verdictLabel(normalizeCandidateVerdict(c).verdict))}
+            ${row('Semantic % (similarity only)', c => c.semantic_score_pct ?? (c.semantic_score != null ? Math.round(c.semantic_score * 100) : '—'))}
+            ${row('Authenticity', c => c.authenticity_score ?? '—')}
+            ${row('Must-haves %', c => c.llm_scored ? (c.must_have_score ?? '—') : '—')}
+            ${row('Nice-to-haves %', c => c.nice_to_have_score ?? '—')}
+            ${row('Criteria %', c => c.criteria_score ?? '—')}
+            ${criteriaRows}
+          </tbody>
+        </table>`;
+      wrap.classList.add('active');
+    }
+
+    function scrollToCompareMatrix() {
+      const el = document.getElementById('compare-matrix-wrap');
+      if (el.classList.contains('active')) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function renderReqFitTags(matched, missing, okClass) {
+      const ok = (matched || []).slice(0, 5).map(t =>
+        `<span class="fit-tag ok">${escHtml(t)}</span>`).join('');
+      const miss = (missing || []).slice(0, 4).map(t =>
+        `<span class="fit-tag miss">${escHtml(t)}</span>`).join('');
+      return (ok || miss) ? ok + miss : '<span class="fit-tag">—</span>';
+    }
+
+    function renderCandidateCard(raw, idx) {
+      const c = normalizeCandidateVerdict(raw);
       const h = hashName(c.candidate_name);
       const avBg = AVATAR_COLORS[h % AVATAR_COLORS.length];
       const avTx = AVATAR_TEXT[h % AVATAR_TEXT.length];
@@ -1111,7 +2076,18 @@
           </div>`;
       }).join('');
 
-      const breakdown = Object.entries(c.scores).map(([k, v]) => `
+      const semPct = c.semantic_score_pct ?? (c.semantic_score != null ? Math.round(c.semantic_score * 100) : null);
+      const authHtml = c.llm_scored && c.authenticity_score != null ? `
+        <div class="auth-row">
+          <span class="auth-score ${authScoreClass(c.authenticity_score)}">Authenticity ${c.authenticity_score}/100</span>
+          ${(c.authenticity_flags || []).slice(0, 2).map(f => `<span class="auth-flag">${escHtml(f)}</span>`).join('')}
+        </div>` : '';
+      const overallHtml = c.overall_score != null
+        ? `<span class="semantic-pill" style="border-color:var(--indigo);color:var(--indigo)">Overall ${c.overall_score}% → ${verdictLabel(c.verdict)}</span>` : '';
+      const semanticHtml = semPct != null
+        ? `<span class="semantic-pill">Semantic similarity ${semPct}%</span>` : '';
+
+      const breakdown = Object.entries(c.scores || {}).map(([k, v]) => `
         <div class="bd-row">
           <span class="bd-label">${CRITERIA_LABELS[k] || k}</span>
           <div>
@@ -1128,14 +2104,28 @@
             <div class="c-info">
               <div class="c-name">
                 ${escHtml(c.candidate_name)}
-                <span class="verdict-tag ${verdictClass(c.verdict)}">${verdictLabel(c.verdict)}</span>
+                ${c.rank ? `<span class="rank-badge">#${c.rank}</span>` : ''}
               </div>
               <div class="c-meta">${escHtml(c.role_title || '—')} · ${c.years_experience || 0} yrs · ${escHtml(c.location || '—')}</div>
+              ${overallHtml}
+              ${semanticHtml}
               ${c.better_fit_jd ? `<span class="better-fit-pill">Better fit for: ${c.better_fit_jd}</span>` : ''}
             </div>
-            ${renderScoreCircle(c.overall_score, c.candidate_id)}
+            ${renderVerdictStamp(c)}
           </div>
           <p class="c-summary">${escHtml(c.summary || '')}</p>
+          ${authHtml}
+          ${c.llm_scored ? renderEvidence(c.evidence) : ''}
+          <div class="req-fit-row" style="${c.llm_scored ? '' : 'opacity:0.5'}">
+            <div class="req-fit-block">
+              <strong>Must-haves (${c.must_have_score ?? 0}%)</strong>
+              <div class="req-fit-tags">${renderReqFitTags(c.must_have_matched, c.must_have_missing)}</div>
+            </div>
+            <div class="req-fit-block">
+              <strong>Nice-to-haves (${c.nice_to_have_score ?? 0}%)</strong>
+              <div class="req-fit-tags">${renderReqFitTags(c.nice_to_have_matched, c.nice_to_have_missing)}</div>
+            </div>
+          </div>
           <div class="mini-bars">${miniBars}</div>
           <div class="card-actions">
             <button class="btn-ghost" onclick="goChat('${c.candidate_id}')">Chat</button>
@@ -1151,15 +2141,22 @@
     function renderCandidates() {
       const container = document.getElementById('candidates-container');
       if (!appState.matchHasRun || !appState.matchResults.length) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">🎯</div>
-            <h3>No matches yet</h3>
-            <p>Upload resumes and a JD, then click Run AI Matching</p>
-          </div>`;
+        document.getElementById('podium-dashboard').classList.remove('active');
+        document.getElementById('req-panel').classList.remove('active');
+        document.getElementById('compare-matrix-wrap').classList.remove('active');
+        container.innerHTML = emptyStateHtml(
+          '🎯',
+          'No matches yet',
+          'Upload resumes and a job description, then run AI matching to see ranked candidates.',
+          '<button class="btn-primary" onclick="navigate(\'upload\')">Go to Upload</button>'
+        );
         return;
       }
-      const sorted = [...appState.matchResults].sort((a, b) => b.overall_score - a.overall_score);
+      const sorted = sortedMatchResults();
+      renderPodium();
+      renderRequirementsPanel();
+      renderCompareMatrix();
+      updateTopbar();
       container.innerHTML = sorted.map((c, i) => renderCandidateCard(c, i)).join('');
       setTimeout(() => {
         document.querySelectorAll('.mini-bar-fill').forEach(el => {
@@ -1176,57 +2173,90 @@
       arrow.textContent = el.classList.contains('open') ? '▲' : '▼';
     }
 
-    async function runMatching() {
+    async function runMatching(ev) {
       if (!appState.resumes.length) { showToast('Upload at least one resume first', 'error'); return; }
       if (!appState.jds.length) { showToast('Add a job description first', 'error'); return; }
       const jdId = document.getElementById('jd-select').value || appState.selectedJdId;
       if (!jdId) { showToast('Select a job description', 'error'); return; }
       const btn = document.getElementById('run-match-btn');
       const log = document.getElementById('log-area');
-      btn.disabled = true;
+      const progress = document.getElementById('match-progress');
+      setBtnLoading(btn, true, 'Matching…');
+      progress?.classList.add('active');
       log.classList.add('active');
       log.innerHTML = '';
       const names = appState.resumes.map(r => r.name);
       const logLines = [];
+      let activeTicker = null;
       try {
         names.forEach((name, i) => {
           const line = document.createElement('div');
           line.className = 'log-line';
           line.id = `log-line-${i}`;
-          line.textContent = `Analyzing ${name}...`;
+          line.textContent = `Analyzing ${name}…`;
           log.appendChild(line);
           logLines.push(line);
         });
         log.scrollTop = log.scrollHeight;
 
-        const matchPromise = API.match(jdId);
-        const ticker = setInterval(() => {
-          const pending = logLines.find(l => !l.classList.contains('done'));
-          if (pending) pending.scrollIntoView({ block: 'nearest' });
-        }, 500);
+        let tick = 0;
+        activeTicker = setInterval(() => {
+          logLines.forEach(l => l.classList.remove('active'));
+          if (logLines[tick]) {
+            logLines[tick].classList.add('active');
+            logLines[tick].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+          tick = (tick + 1) % Math.max(logLines.length, 1);
+        }, 600);
 
-        const data = await matchPromise;
-        clearInterval(ticker);
+        const forceRescore = !!(ev && ev.shiftKey);
+        const data = await API.match(jdId, forceRescore);
+        clearInterval(activeTicker);
 
-        logLines.forEach(line => {
-          line.classList.add('done');
-          line.textContent = line.textContent.replace('...', ' — scored ✓');
-        });
+        if (data.cached) {
+          log.innerHTML = '<div class="log-line done">✓ Same files as last run — loaded saved results (instant)</div>';
+        } else {
+          logLines.forEach((line, i) => {
+            line.classList.remove('active');
+            line.classList.add('done');
+            const score = data.results?.[i]?.overall_score;
+            line.textContent = score != null
+              ? `✓ ${names[i]} — score ${score}`
+              : `✓ ${names[i]} scored`;
+          });
+        }
 
         appState.matchResults = data.results || [];
+        appState.jdRequirements = data.requirements || null;
+        appState.scoringWeights = data.scoring_weights || null;
         appState.matchHasRun = true;
         appState.selectedJdId = jdId;
         log.innerHTML += `<div class="log-line done">✓ ${appState.matchResults.length} candidates ranked</div>`;
+        if (data.rag_meta && !data.cached) {
+          const rm = data.rag_meta;
+          log.innerHTML += `<div class="log-line done">✓ RAG: ${rm.llm_scored_count}/${rm.total_resumes} deep-scored (top semantic shortlist)</div>`;
+        }
         renderCandidates();
         renderChatSelect();
         renderInterviewSelect();
+        try {
+          const sl = await API.getShortlistedInterview(jdId);
+          appState.interviewShortlisted = sl.candidates || [];
+        } catch (_) { /* optional */ }
         updateTopbar();
-        showToast('AI matching complete!', 'success');
+        const top = appState.matchResults[0];
+        showToast(
+          data.cached
+            ? (top ? `Loaded saved ranking — ${top.candidate_name}` : 'Loaded saved match results')
+            : (top ? `Done! Top match: ${top.candidate_name} (${top.overall_score})` : 'AI matching complete!'),
+          'success'
+        );
       } catch (e) {
         log.innerHTML += `<div class="log-line" style="color:var(--red)">${escHtml(e.message)}</div>`;
         showToast(e.message, 'error');
       } finally {
-        btn.disabled = false;
+        setBtnLoading(btn, false);
+        progress?.classList.remove('active');
         setTimeout(() => log.classList.remove('active'), 5000);
       }
     }
@@ -1237,26 +2267,53 @@
     }
 
     async function goInterview(id) {
+      const row = appState.matchResults.find(c => c.candidate_id === id);
+      if (row && normalizeCandidateVerdict(row).verdict !== 'TOP_MATCH') {
+        showToast('Interview packs are for shortlisted candidates only (Overall ≥ 70)', 'error');
+        return;
+      }
       appState.interviewTarget = id;
       navigate('interview');
-      renderInterviewSelect();
-      await loadInterviewForCandidate();
+      await loadShortlistedRoster();
+      selectInterviewCandidate(id);
     }
 
     /* ── Compare modal ── */
     function openCompareModal() {
       document.getElementById('compare-modal').classList.add('open');
-      const top3 = [...appState.matchResults].sort((a, b) => b.overall_score - a.overall_score).slice(0, 3);
-      const labels = Object.values(CRITERIA_LABELS);
-      const keys = Object.keys(CRITERIA_LABELS);
-      const datasets = top3.map((c, i) => ({
-        label: c.candidate_name,
-        data: keys.map(k => c.scores[k]?.score || 0),
-        backgroundColor: ['rgba(99,102,241,0.15)', 'rgba(16,185,129,0.12)', 'rgba(245,158,11,0.12)'][i],
-        borderColor: ['#6366F1', '#10B981', '#F59E0B'][i],
-        borderWidth: 2,
-        pointBackgroundColor: ['#6366F1', '#10B981', '#F59E0B'][i],
-      }));
+      const sorted = sortedMatchResults();
+      const chartN = Math.min(sorted.length, 6);
+      const chartCandidates = sorted.slice(0, chartN);
+      document.getElementById('compare-modal-title').textContent =
+        chartN >= sorted.length
+          ? `Radar — all ${sorted.length} candidates`
+          : `Radar — top ${chartN} of ${sorted.length}`;
+      const labels = ['Must-haves', 'Nice-to-haves', 'Criteria', ...Object.values(CRITERIA_LABELS)];
+      const keys = ['must_have_score', 'nice_to_have_score', 'criteria_score', ...Object.keys(CRITERIA_LABELS)];
+      const palette = [
+        ['#6366F1', 'rgba(99,102,241,0.15)'],
+        ['#10B981', 'rgba(16,185,129,0.12)'],
+        ['#F59E0B', 'rgba(245,158,11,0.12)'],
+        ['#EC4899', 'rgba(236,72,153,0.12)'],
+        ['#0EA5E9', 'rgba(14,165,233,0.12)'],
+        ['#A855F7', 'rgba(168,85,247,0.12)'],
+      ];
+      const datasets = chartCandidates.map((c, i) => {
+        const [border, bg] = palette[i % palette.length];
+        return {
+          label: `#${c.rank || i + 1} ${c.candidate_name}`,
+          data: keys.map(k => {
+            if (k === 'must_have_score') return c.must_have_score ?? 0;
+            if (k === 'nice_to_have_score') return c.nice_to_have_score ?? 0;
+            if (k === 'criteria_score') return c.criteria_score ?? 0;
+            return c.scores?.[k]?.score || 0;
+          }),
+          backgroundColor: bg,
+          borderColor: border,
+          borderWidth: 2,
+          pointBackgroundColor: border,
+        };
+      });
       if (radarChart) radarChart.destroy();
       radarChart = new Chart(document.getElementById('radar-chart'), {
         type: 'radar',
@@ -1268,11 +2325,11 @@
               min: 0, max: 100,
               grid: { color: 'rgba(99,102,241,0.12)' },
               angleLines: { color: 'rgba(99,102,241,0.12)' },
-              pointLabels: { color: '#8896B8', font: { size: 10, family: 'DM Sans' } },
+              pointLabels: { color: '#8896B8', font: { size: 9, family: 'DM Sans' } },
               ticks: { display: false },
             },
           },
-          plugins: { legend: { labels: { color: '#E8EEFF', font: { family: 'DM Sans' } } } },
+          plugins: { legend: { labels: { color: '#E8EEFF', font: { size: 11, family: 'DM Sans' } } } },
         },
       });
     }
@@ -1342,9 +2399,9 @@
       const hist = appState.chatHistory[appState.chatTarget] || [];
       document.getElementById('chat-messages').innerHTML = hist.length
         ? hist.map(m => `
-        <div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${escHtml(m.content)}</div>
+        <div class="msg ${m._typing ? 'typing' : (m.role === 'user' ? 'user' : 'ai')}">${escHtml(m.content)}</div>
       `).join('')
-        : '<div style="color:var(--t3);font-size:12px;padding:8px">Ask a question about this candidate\'s resume.</div>';
+        : emptyStateHtml('💬', 'Start a conversation', 'Ask anything about this candidate — answers are grounded in their resume only.');
       const box = document.getElementById('chat-messages');
       box.scrollTop = box.scrollHeight;
     }
@@ -1355,39 +2412,109 @@
 
     async function sendChat() {
       const input = document.getElementById('chat-input');
+      const sendBtn = document.querySelector('.chat-send');
       const msg = input.value.trim();
       if (!msg || !appState.chatTarget) return;
       const hist = appState.chatHistory[appState.chatTarget] ||= [];
       hist.push({ role: 'user', content: msg });
       renderChatMessages();
       input.value = '';
+      input.disabled = true;
+      if (sendBtn) sendBtn.disabled = true;
+      hist.push({ role: 'assistant', content: 'Thinking…', _typing: true });
+      renderChatMessages();
       try {
         const data = await API.chat(appState.chatTarget, msg);
-        appState.chatHistory[appState.chatTarget] = data.history || hist.concat([
+        appState.chatHistory[appState.chatTarget] = data.history || hist.filter(m => !m._typing).concat([
           { role: 'assistant', content: data.reply },
         ]);
         renderChatMessages();
       } catch (e) {
-        hist.pop();
+        appState.chatHistory[appState.chatTarget] = hist.filter(m => !m._typing);
+        if (appState.chatHistory[appState.chatTarget].at(-1)?.role === 'user') {
+          appState.chatHistory[appState.chatTarget].pop();
+        }
         renderChatMessages();
         showToast(e.message, 'error');
+      } finally {
+        input.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
       }
     }
 
-    /* ── Interview ── */
+    /* ── Interview (shortlisted only) ── */
     const IQ_SECTIONS = [
-      { key: 'technical', icon: '🔧', title: 'Technical Validation', color: '#6366F1', count: 3 },
-      { key: 'problem_solving', icon: '🧠', title: 'Problem Solving', color: '#8B5CF6', count: 2 },
-      { key: 'behavioral', icon: '👥', title: 'Behavioral', color: '#10B981', count: 2 },
-      { key: 'gap_probing', icon: '⚠️', title: 'Gap Probing', color: '#F59E0B', count: 2 },
-      { key: 'role_specific', icon: '🎯', title: 'Role-Specific', color: '#0EA5E9', count: 1 },
+      { key: 'scenario_depth', icon: '🧪', title: 'Scenario depth (resume claims)', color: '#6366F1', count: 3 },
+      { key: 'gap_validation', icon: '⚠️', title: 'Gap validation (missing must-haves)', color: '#F59E0B', count: 2 },
+      { key: 'behavioral', icon: '👥', title: 'Behavioral & leadership', color: '#10B981', count: 2 },
+      { key: 'role_specific', icon: '🎯', title: 'Role-specific (JD)', color: '#0EA5E9', count: 2 },
     ];
+
+    function getShortlistedCandidates() {
+      if (appState.interviewShortlisted.length) {
+        return appState.interviewShortlisted.map(c => ({
+          id: c.candidate_id,
+          label: `${c.candidate_name} — Overall ${c.overall_score}%`,
+          row: c,
+        }));
+      }
+      return sortedMatchResults()
+        .filter(c => normalizeCandidateVerdict(c).verdict === 'TOP_MATCH')
+        .map(c => ({
+          id: c.candidate_id,
+          label: `${c.candidate_name} — Overall ${c.overall_score}%`,
+          row: c,
+        }));
+    }
+
+    async function loadShortlistedRoster() {
+      const roster = document.getElementById('shortlist-roster');
+      const jdId = appState.selectedJdId || appState.jds[0]?.id;
+      if (!jdId || !appState.matchHasRun) {
+        appState.interviewShortlisted = [];
+        roster.innerHTML = '<p style="font-size:12px;color:var(--t3)">Run AI Matching on a role to see shortlisted candidates here.</p>';
+        renderInterviewSelect();
+        return;
+      }
+      try {
+        const data = await API.getShortlistedInterview(jdId);
+        appState.interviewShortlisted = data.candidates || [];
+      } catch (_) {
+        appState.interviewShortlisted = getShortlistedCandidates().map(x => x.row);
+      }
+      const list = appState.interviewShortlisted;
+      if (!list.length) {
+        roster.innerHTML = '<p style="font-size:12px;color:var(--t3)">No shortlisted candidates (Overall ≥ 70) for this role yet.</p>';
+      } else {
+        roster.innerHTML = list.map(c => `
+          <div class="shortlist-chip ${c.candidate_id === appState.interviewTarget ? 'active' : ''}"
+            onclick="selectInterviewCandidate('${c.candidate_id}')">
+            <div class="sc-name">${escHtml(c.candidate_name)}</div>
+            <div class="sc-meta">Overall ${c.overall_score}% · Must ${c.must_have_score ?? '—'}%</div>
+            <span class="sc-badge">SHORTLISTED</span>
+          </div>`).join('');
+      }
+      renderInterviewSelect();
+    }
+
+    function selectInterviewCandidate(id) {
+      appState.interviewTarget = id;
+      document.querySelectorAll('.shortlist-chip').forEach(el => {
+        el.classList.toggle('active', el.getAttribute('onclick')?.includes(id));
+      });
+      const sel = document.getElementById('interview-candidate-select');
+      if (sel) sel.value = id;
+      loadInterviewForCandidate();
+    }
 
     function renderInterviewSelect() {
       const sel = document.getElementById('interview-candidate-select');
-      const candidates = getChatCandidates();
+      const candidates = getShortlistedCandidates();
       if (!candidates.length) {
-        sel.innerHTML = '<option value="">Upload resumes first</option>';
+        sel.innerHTML = '<option value="">No shortlisted candidates</option>';
+        appState.interviewTarget = null;
+        renderInterviewCandidatePanel(null);
+        renderInterviewSections();
         return;
       }
       if (!appState.interviewTarget || !candidates.find(c => c.id === appState.interviewTarget)) {
@@ -1398,55 +2525,161 @@
       ).join('');
       sel.onchange = () => {
         appState.interviewTarget = sel.value;
-        loadInterviewForCandidate();
+        selectInterviewCandidate(sel.value);
       };
+      const row = candidates.find(c => c.id === appState.interviewTarget)?.row;
+      renderInterviewCandidatePanel(row);
+    }
+
+    function renderInterviewCandidatePanel(row) {
+      const panel = document.getElementById('iq-candidate-panel');
+      if (!row) {
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        return;
+      }
+      panel.style.display = 'block';
+      const strengths = (row.strengths || []).slice(0, 3).map(s => `<li>${escHtml(s)}</li>`).join('');
+      const gaps = (row.must_have_missing || row.missing_must_haves || []).slice(0, 4)
+        .map(g => `<span class="fit-tag miss">${escHtml(g)}</span>`).join('');
+      panel.innerHTML = `
+        <h4>${escHtml(row.candidate_name)} — shortlisted for ${escHtml(appState.jds.find(j => j.id === appState.selectedJdId)?.title || 'this role')}</h4>
+        <p style="font-size:12px;color:var(--t2);margin-bottom:8px">${escHtml(row.summary || '')}</p>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:6px">
+          Overall ${row.overall_score}% · Must ${row.must_have_score ?? '—'}% · Criteria ${row.criteria_score ?? '—'}%
+        </div>
+        ${gaps ? `<div class="req-fit-tags" style="margin-bottom:8px">${gaps}</div>` : ''}
+        ${strengths ? `<ul style="margin:0;padding-left:18px">${strengths}</ul>` : ''}`;
     }
 
     async function loadInterviewForCandidate() {
       if (!appState.interviewTarget) {
-        appState.interviewQuestions = null;
+        appState.interviewPack = null;
         renderInterviewSections();
+        document.getElementById('iq-footer-panel').style.display = 'none';
         return;
       }
+      const row = appState.interviewShortlisted.find(c => c.candidate_id === appState.interviewTarget)
+        || appState.matchResults.find(c => c.candidate_id === appState.interviewTarget);
+      renderInterviewCandidatePanel(row || null);
       try {
         const data = await API.getInterview(appState.interviewTarget);
-        appState.interviewQuestions = data.questions || null;
+        appState.interviewPack = data.pack || (data.questions ? { version: 2, sections: data.questions } : null);
+        if (appState.interviewPack?.sections) {
+          appState.interviewPack.sections = resolveInterviewSections(appState.interviewPack);
+        }
       } catch (_) {
-        appState.interviewQuestions = null;
+        appState.interviewPack = null;
       }
+      syncInterviewFooterFromPack();
       renderInterviewSections();
+    }
+
+    function syncInterviewFooterFromPack() {
+      const footer = document.getElementById('iq-footer-panel');
+      const pack = appState.interviewPack;
+      if (!pack?.sections) {
+        footer.style.display = 'none';
+        return;
+      }
+      footer.style.display = 'block';
+      document.getElementById('iq-global-notes').value = pack.interviewer_notes || '';
+      document.getElementById('iq-final-rec').value = pack.final_recommendation || '';
     }
 
     async function generateInterview() {
       if (!appState.interviewTarget) {
-        showToast('Upload and select a candidate first', 'error');
+        showToast('Select a shortlisted candidate first', 'error');
         return;
       }
+      if (!appState.selectedJdId) {
+        showToast('Select a job description on AI Matching first', 'error');
+        return;
+      }
+      const btn = document.querySelector('.interview-top .btn-primary');
+      setBtnLoading(btn, true, 'Generating…');
       try {
         const data = await API.interview(appState.interviewTarget, appState.selectedJdId);
-        appState.interviewQuestions = data.questions;
+        const pack = data.pack || { version: 2, sections: data.questions };
+        if (pack.sections) pack.sections = resolveInterviewSections(pack);
+        appState.interviewPack = pack;
+        syncInterviewFooterFromPack();
         renderInterviewSections();
-        showToast('Interview questions generated', 'success');
+        showToast('Interview pack ready (unique questions from resume + JD)', 'success');
       } catch (e) {
         showToast(e.message, 'error');
+      } finally {
+        setBtnLoading(btn, false);
       }
+    }
+
+    function renderRatingStars(section, qi, rating) {
+      return [1, 2, 3, 4, 5].map(n =>
+        `<button type="button" class="iq-star ${rating === n ? 'on' : ''}"
+          onclick="setQuestionRating('${section}', ${qi}, ${n})">${n}</button>`
+      ).join('');
+    }
+
+    function resolveInterviewSections(pack) {
+      if (!pack) return {};
+      const base = pack.sections && typeof pack.sections === 'object' ? { ...pack.sections } : { ...pack };
+      const aliases = {
+        technical: 'scenario_depth',
+        problem_solving: 'scenario_depth',
+        technical_validation: 'scenario_depth',
+        gap_probing: 'gap_validation',
+      };
+      Object.entries(aliases).forEach(([oldKey, newKey]) => {
+        const oldItems = (base[oldKey] || []).filter(q => q?.q && !String(q.q).includes('Regenerate pack'));
+        if (!oldItems.length) return;
+        base[newKey] = [...(base[newKey] || []).filter(q => q?.q && !String(q.q).includes('Regenerate pack')), ...oldItems];
+      });
+      const cleaned = {};
+      IQ_SECTIONS.forEach(sec => {
+        cleaned[sec.key] = (base[sec.key] || []).filter(q => q?.q && !String(q.q).includes('Regenerate pack'));
+      });
+      return cleaned;
     }
 
     function renderInterviewSections() {
       const container = document.getElementById('iq-sections');
-      const q = appState.interviewQuestions;
-      if (!q) {
-        container.innerHTML = `<div class="empty-state" id="interview-empty">
-          <div class="empty-icon">🎤</div><h3>No questions yet</h3>
-          <p>Select a candidate and click Generate Questions</p></div>`;
+      const pack = appState.interviewPack;
+      const sections = resolveInterviewSections(pack);
+      const totalQ = Object.values(sections).reduce((n, arr) => n + (arr?.length || 0), 0);
+      if (!totalQ) {
+        container.innerHTML = emptyStateHtml(
+          '🎤',
+          'No interview pack yet',
+          'Choose a shortlisted candidate and generate unique scenario, gap, and behavioral questions.',
+          '<button class="btn-primary" onclick="generateInterview()">Generate Interview Pack</button>'
+        );
         return;
       }
-      container.innerHTML = IQ_SECTIONS.map((sec, i) => {
-        const items = q[sec.key] || [];
+      let suggestionsHtml = '';
+      if (pack.suggestions?.length) {
+        suggestionsHtml = `
+          <div class="iq-suggestions">
+            <strong style="font-size:12px">Interview Pack Behavior — suggestions for you</strong>
+            <ul>${pack.suggestions.map(s => `<li>${escHtml(s)}</li>`).join('')}</ul>
+          </div>`;
+      }
+      if (pack.focus_skills?.length) {
+        suggestionsHtml += `<p style="font-size:11px;color:var(--t3);margin-top:8px">Probe: ${pack.focus_skills.map(escHtml).join(' · ')}</p>`;
+      }
+      container.innerHTML = suggestionsHtml + IQ_SECTIONS.map((sec, i) => {
+        const items = sections[sec.key] || [];
+        if (!items.length) return '';
         const questions = items.map((item, qi) => `
           <div class="iq-q ${item.asked ? 'asked' : ''}" id="iq-${sec.key}-${qi}">
             <div class="iq-q-text">${escHtml(item.q)}</div>
             <div class="iq-why">${escHtml(item.why_ask)}</div>
+            ${(item.targets || []).length ? `<div class="iq-targets">Targets: ${item.targets.map(escHtml).join(', ')}</div>` : ''}
+            <div class="iq-rating-row">
+              <span>Rating</span>
+              ${renderRatingStars(sec.key, qi, item.rating)}
+            </div>
+            <textarea class="iq-note" placeholder="Interviewer notes for this question…"
+              oninput="setQuestionNote('${sec.key}', ${qi}, this.value)">${escHtml(item.interviewer_note || '')}</textarea>
             <label class="iq-check">
               <input type="checkbox" ${item.asked ? 'checked' : ''}
                 onchange="toggleAsked('${sec.key}', ${qi}, this.checked)" />
@@ -1470,11 +2703,42 @@
       document.getElementById(`iq-sec-${key}`).classList.toggle('open');
     }
 
+    function setQuestionRating(section, idx, rating) {
+      const item = appState.interviewPack?.sections?.[section]?.[idx];
+      if (!item) return;
+      item.rating = item.rating === rating ? null : rating;
+      renderInterviewSections();
+    }
+
+    function setQuestionNote(section, idx, text) {
+      const item = appState.interviewPack?.sections?.[section]?.[idx];
+      if (item) item.interviewer_note = text;
+    }
+
     function toggleAsked(section, idx, checked) {
-      if (appState.interviewQuestions?.[section]?.[idx]) {
-        appState.interviewQuestions[section][idx].asked = checked;
-        const el = document.getElementById(`iq-${section}-${idx}`);
-        if (el) el.classList.toggle('asked', checked);
+      const item = appState.interviewPack?.sections?.[section]?.[idx];
+      if (!item) return;
+      item.asked = checked;
+      const el = document.getElementById(`iq-${section}-${idx}`);
+      if (el) el.classList.toggle('asked', checked);
+    }
+
+    async function saveInterviewPack() {
+      if (!appState.interviewTarget || !appState.interviewPack?.sections) {
+        showToast('Generate an interview pack first', 'error');
+        return;
+      }
+      appState.interviewPack.interviewer_notes = document.getElementById('iq-global-notes').value;
+      appState.interviewPack.final_recommendation = document.getElementById('iq-final-rec').value;
+      try {
+        await API.updateInterview(appState.interviewTarget, {
+          interviewer_notes: appState.interviewPack.interviewer_notes,
+          final_recommendation: appState.interviewPack.final_recommendation,
+          sections: appState.interviewPack.sections,
+        });
+        showToast('Interview notes and ratings saved', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
       }
     }
 
@@ -1483,11 +2747,37 @@
         showToast('Select a candidate first', 'error');
         return;
       }
-      if (!appState.interviewQuestions) {
-        showToast('Generate interview questions first', 'error');
+      if (!appState.interviewPack?.sections) {
+        showToast('Generate interview pack first', 'error');
         return;
       }
-      window.open(`/api/interview/export?candidate_id=${encodeURIComponent(appState.interviewTarget)}`, '_blank');
+      saveInterviewPack().finally(() => {
+        window.open(`/api/interview/export?candidate_id=${encodeURIComponent(appState.interviewTarget)}`, '_blank');
+      });
+    }
+
+    /* ── Theme ── */
+    function getTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    }
+
+    function syncThemeToggle() {
+      const light = getTheme() === 'light';
+      const toggle = document.getElementById('theme-toggle');
+      const label = document.getElementById('theme-mode-label');
+      if (toggle) toggle.checked = light;
+      if (label) label.textContent = light ? 'Light mode' : 'Dark mode';
+    }
+
+    function setTheme(theme) {
+      const t = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('tm-theme', t);
+      syncThemeToggle();
+    }
+
+    function toggleTheme(isLight) {
+      setTheme(isLight ? 'light' : 'dark');
     }
 
     /* ── Settings ── */
@@ -1503,6 +2793,7 @@
     function openSettings() {
       document.getElementById('settings-drawer').classList.add('open');
       document.getElementById('drawer-backdrop').classList.add('open');
+      syncThemeToggle();
       loadSettings();
     }
     function closeSettings() {
@@ -1516,10 +2807,14 @@
         appState.resumes = [];
         appState.jds = [];
         appState.matchResults = [];
+        appState.jdRequirements = null;
+        appState.scoringWeights = null;
         appState.matchHasRun = false;
         appState.selectedJdId = null;
         appState.chatHistory = {};
-        appState.interviewQuestions = null;
+        appState.interviewPack = null;
+        appState.interviewShortlisted = [];
+        navigate('overview');
         renderResumeList();
         renderJdList();
         renderCandidates();
@@ -1533,11 +2828,18 @@
 
     /* ── Init ── */
     async function init() {
-      setupDropzones();
-      await loadFiles();
-      updateJdSelect();
-      renderCandidates();
-      updateTopbar();
+      syncThemeToggle();
+      try {
+        setupDropzones();
+        await loadFiles();
+        updateJdSelect();
+        renderCandidates();
+        updateTopbar();
+      } catch (e) {
+        showToast(e.message || 'Failed to load workspace', 'error');
+      } finally {
+        hidePageLoader();
+      }
       document.addEventListener('keydown', e => {
         if (e.key === 'Escape') { closeCompareModal(); closeSettings(); }
       });

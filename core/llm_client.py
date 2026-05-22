@@ -34,8 +34,16 @@ def _require_key(provider: str) -> str:
     return key
 
 
+def _llm_temperature() -> float:
+    try:
+        return float(os.getenv("LLM_TEMPERATURE", "0"))
+    except ValueError:
+        return 0.0
+
+
 def _cache_key(provider: str, system: str, prompt: str, json_mode: bool) -> str:
-    blob = f"{provider}|{json_mode}|{system}|{prompt}"
+    temp = _llm_temperature()
+    blob = f"{provider}|{json_mode}|{temp}|{system}|{prompt}"
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
@@ -59,6 +67,7 @@ def _complete_anthropic(system: str, prompt: str) -> str:
     response = client.messages.create(
         model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
         max_tokens=int(os.getenv("LLM_MAX_TOKENS", "4096")),
+        temperature=_llm_temperature(),
         system=system or "You are a helpful assistant.",
         messages=[{"role": "user", "content": prompt}],
     )
@@ -71,6 +80,7 @@ def _complete_openai(system: str, prompt: str, json_mode: bool) -> str:
     client = OpenAI(api_key=_require_key("openai"))
     kwargs: dict = {
         "model": os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        "temperature": _llm_temperature(),
         "messages": [
             {"role": "system", "content": system or "You are a helpful assistant."},
             {"role": "user", "content": prompt},
@@ -94,10 +104,11 @@ def _complete_gemini(system: str, prompt: str, json_mode: bool) -> str:
         model_name,
         system_instruction=system or None,
     )
-    generation_config = None
+    generation_config = genai.GenerationConfig(temperature=_llm_temperature())
     if json_mode:
         generation_config = genai.GenerationConfig(
-            response_mime_type="application/json"
+            temperature=_llm_temperature(),
+            response_mime_type="application/json",
         )
     response = model.generate_content(prompt, generation_config=generation_config)
     text = getattr(response, "text", None) or ""

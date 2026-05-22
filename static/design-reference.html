@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Talent Matrix — Design Reference (not wired to app)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /*
+      DESIGN DIRECTION: "Editorial Command Center"
+      — Recruiter-facing ops tool: calm, credible, data-forward.
+      — Replaces indigo/violet SaaS palette with warm neutrals + copper + teal signal.
+      — This file is a visual spec only. static/index.html is unchanged.
+    */
+
+    :root, [data-theme="dark"] {
+      --ink: #0C0E10;
+      --bg: #111418;
+      --surf: #181C22;
+      --card: #1E232B;
+      --hover: #252B35;
+      --paper: #E8E4DC;
+      --tx: #EDE9E1;
+      --t2: #9CA3AF;
+      --t3: #5C6573;
+      --accent: #C45C3E;
+      --accent-soft: rgba(196, 92, 62, 0.14);
+      --accent-bd: rgba(196, 92, 62, 0.35);
+      --signal: #2DD4BF;
+      --signal-soft: rgba(45, 212, 191, 0.12);
+      --signal-bd: rgba(45, 212, 191, 0.32);
+      --grn: #34D399;
+      --grn-soft: rgba(52, 211, 153, 0.12);
+      --amb: #FBBF24;
+      --amb-soft: rgba(251, 191, 36, 0.12);
+      --red: #F87171;
+      --red-soft: rgba(248, 113, 113, 0.12);
+      --bd: rgba(237, 233, 225, 0.08);
+      --bd2: rgba(237, 233, 225, 0.16);
+      --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      --sb-w: 232px;
+      --radius: 12px;
+      --radius-lg: 16px;
+      --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    [data-theme="light"] {
+      --ink: #1A1D21;
+      --bg: #F4F1EB;
+      --surf: #FFFFFF;
+      --card: #FAF8F4;
+      --hover: #EDE8DF;
+      --paper: #1A1D21;
+      --tx: #1A1D21;
+      --t2: #4B5563;
+      --t3: #9CA3AF;
+      --accent: #B84A2F;
+      --accent-soft: rgba(184, 74, 47, 0.1);
+      --accent-bd: rgba(184, 74, 47, 0.28);
+      --signal: #0D9488;
+      --signal-soft: rgba(13, 148, 136, 0.1);
+      --signal-bd: rgba(13, 148, 136, 0.28);
+      --grn: #059669;
+      --grn-soft: rgba(5, 150, 105, 0.1);
+      --amb: #D97706;
+      --amb-soft: rgba(217, 119, 6, 0.1);
+      --red: #DC2626;
+      --red-soft: rgba(220, 38, 38, 0.08);
+      --bd: rgba(26, 29, 33, 0.1);
+      --bd2: rgba(26, 29, 33, 0.18);
+      --shadow: 0 12px 32px rgba(26, 29, 33, 0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      background: var(--bg);
+      color: var(--tx);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: var(--grain);
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.6;
+    }
+
+    .ref-banner {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+    .ref-banner a { color: inherit; text-decoration: underline; }
+
+    /* ── Analysis doc block ── */
+    .analysis {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px 0;
+    }
+    .analysis h1 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 700;
+      font-size: clamp(28px, 4vw, 36px);
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+    .analysis .lede {
+      color: var(--t2);
+      font-size: 15px;
+      max-width: 62ch;
+      margin-bottom: 28px;
+    }
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .analysis-card {
+      background: var(--surf);
+      border: 1px solid var(--bd);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+    }
+    .analysis-card h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+    .analysis-card p, .analysis-card li {
+      font-size: 13px;
+      color: var(--t2);
+      line-height: 1.55;
+    }
+    .analysis-card ul { padding-left: 18px; margin-top: 8px; }
+    .analysis-card li { margin-bottom: 4px; }
+    .swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .swatch {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--bd2);
+      position: relative;
+    }
+    .swatch span {
+      position: absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8px;
+      color: var(--t3);
+      white-space: nowrap;
+    }
+    .type-sample { margin-top: 12px; }
+    .type-display {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .type-body { font-size: 13px; color: var(--t2); margin-top: 4px; }
+    .type-mono {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--signal);
+      margin-top: 6px;
+    }
+    .theme-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .theme-toggle-wrap label {
+      font-size: 12px;
+      color: var(--t2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .theme-toggle-wrap input { accent-color: var(--accent); }
+
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--bd);
+    }
+
+    /* ── App shell mock (AI Matching view) ── */
+    .app-mock {
+      max-width: 1200px;
+      margin: 0 auto 48px;
+      padding: 0 24px 48px;
+      border: 1px dashed var(--bd2);
+      border-radius: 20px;
+      overflow: hidden;
+      background: var(--ink);
+      box-shadow: var(--shadow);
+    }
+    .app-mock-label {
+      font-size: 11px;
+      color: var(--t3);
+      padding: 12px 16px;
+      background: var(--card);
+      border-bottom: 1px solid var(--bd);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: var(--sb-w) 1fr;
+      min-height: 720px;
+    }
+
+    .sidebar {
+      background: var(--ink);
+      border-right: 1px solid var(--bd);
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 8px 24px;
+    }
+    .logo-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, var(--accent) 0%, #8B3A28 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 16px rgba(196, 92, 62, 0.25);
+    }
+    .logo-name {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .logo-tag {
+      font-size: 10px;
+      color: var(--t3);
+      margin-top: 2px;
+    }
+    .sb-section {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--t3);
+      padding: 12px 10px 6px;
+    }
+    .sb-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      margin: 2px 0;
+      border-radius: 10px;
+      color: var(--t2);
+      font-size: 13px;
+      border: 1px solid transparent;
+      cursor: default;
+    }
+    .sb-item:hover { background: var(--hover); color: var(--tx); }
+    .sb-item.active {
+      background: var(--accent-soft);
+      color: var(--tx);
+      border-color: var(--accent-bd);
+    }
+    .sb-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--card);
+      color: var(--t2);
+    }
+    .sb-item.active .sb-badge {
+      background: var(--accent);
+      color: #fff;
+    }
+    .sb-spacer { flex: 1; }
+    .sb-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 14px;
+      margin-top: 8px;
+      border-top: 1px solid var(--bd);
+    }
+    .sb-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--signal-soft);
+      border: 1px solid var(--signal-bd);
+      color: var(--signal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .main { display: flex; flex-direction: column; background: var(--bg); }
+    .topbar {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--bd);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      background: var(--surf);
+    }
+    .topbar-title {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+    .pill {
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--bd);
+      color: var(--t2);
+      background: var(--card);
+    }
+    .pill.signal {
+      border-color: var(--signal-bd);
+      background: var(--signal-soft);
+      color: var(--signal);
+    }
+    .topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+
+    .btn-primary {
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      padding: 9px 20px;
+      cursor: default;
+      box-shadow: 0 2px 12px rgba(196, 92, 62, 0.3);
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--bd2);
+      border-radius: 8px;
+      color: var(--t2);
+      font-size: 12px;
+      padding: 7px 14px;
+      cursor: default;
+    }
+
+    .content { padding: 20px 24px 28px; flex: 1; overflow: auto; }
+
+    .match-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      background: var(--surf);
+      border: 1px solid var(--bd);
+      border-radius: var(--radius-lg);
+      margin-bottom: 18px;
+    }
+    .match-select {
+      flex: 1;
+      min-width: 200px;
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 10px;
+      color: var(--tx);
+      padding: 9px 14px;
+      font-size: 13px;
+    }
+
+    .podium {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .podium-slot {
+      background: var(--surf);
+      border: 1px solid var(--bd);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    }
+    .podium-slot:nth-child(1) { animation-delay: 0.05s; border-color: rgba(251, 191, 36, 0.35); }
+    .podium-slot:nth-child(2) { animation-delay: 0.12s; }
+    .podium-slot:nth-child(3) { animation-delay: 0.19s; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .podium-medal { font-size: 24px; margin-bottom: 6px; }
+    .podium-name {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .verdict {
+      display: inline-block;
+      margin-top: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+    .verdict.top { background: var(--grn-soft); color: var(--grn); }
+    .verdict.hold { background: var(--amb-soft); color: var(--amb); }
+    .verdict.reject { background: var(--red-soft); color: var(--red); }
+
+    .candidate-card {
+      background: var(--surf);
+      border: 1px solid var(--bd);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 14px;
+      transition: border-color 0.2s;
+      animation: rise 0.5s ease backwards;
+      animation-delay: 0.25s;
+    }
+    .candidate-card:hover { border-color: var(--bd2); }
+    .card-header { display: flex; gap: 16px; align-items: flex-start; }
+    .c-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--signal-soft);
+      border: 1px solid var(--signal-bd);
+      color: var(--signal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .c-info { flex: 1; min-width: 0; }
+    .c-name {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .c-meta { color: var(--t2); font-size: 12px; margin-top: 4px; }
+    .c-score {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 28px;
+      color: var(--signal);
+      line-height: 1;
+      text-align: right;
+    }
+    .c-score span { display: block; font-size: 10px; color: var(--t3); font-weight: 400; }
+    .c-summary {
+      color: var(--t2);
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 14px 0;
+      max-width: 72ch;
+    }
+    .mini-bars {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .mini-bar-label { font-size: 10px; color: var(--t3); margin-bottom: 5px; }
+    .mini-bar-track {
+      height: 4px;
+      background: var(--card);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .mini-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--signal));
+    }
+    .mini-bar-pct {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--t2);
+      margin-top: 4px;
+    }
+    .evidence-item {
+      padding: 10px 12px;
+      background: var(--card);
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+      font-size: 11px;
+      color: var(--t2);
+      margin-bottom: 8px;
+      line-height: 1.45;
+    }
+    .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .token-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .token {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--bd);
+      background: var(--card);
+      color: var(--t2);
+    }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .podium { grid-template-columns: 1fr; }
+      .mini-bars { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="ref-banner">
+    Design reference only — not connected to API. Working app remains at <a href="/">/</a> · Open this file at <code>/static/design-reference.html</code>
+  </div>
+
+  <section class="analysis">
+    <div class="theme-toggle-wrap">
+      <label>
+        <input type="checkbox" id="theme-toggle" onchange="document.documentElement.setAttribute('data-theme', this.checked ? 'light' : 'dark')" />
+        Preview light mode (warm paper)
+      </label>
+    </div>
+
+    <h1>Design analysis &amp; direction</h1>
+    <p class="lede">
+      Your current UI (<code>static/index.html</code>) is solid and functional: Syne + DM Sans, indigo/violet gradients, navy shells, and JetBrains Mono for scores.
+      Per the frontend-design skill, that palette reads as generic “AI SaaS.” Below is a recruiter-appropriate alternative that keeps your layout and flows intact.
+    </p>
+
+    <div class="analysis-grid">
+      <article class="analysis-card">
+        <h3>What works today</h3>
+        <ul>
+          <li>Clear information hierarchy (sidebar → topbar → panels → cards)</li>
+          <li>Semantic verdict colors (TOP / HOLD / REJECT)</li>
+          <li>Dark + light theme with CSS variables</li>
+          <li>Monospace for scores, badges, and logs — correct for data density</li>
+          <li>Staggered card animations on match results</li>
+        </ul>
+      </article>
+
+      <article class="analysis-card">
+        <h3>What to change (intentionally)</h3>
+        <ul>
+          <li><strong>Accent:</strong> Drop #6366F1 / #8B5CF6 gradients → <strong>copper</strong> (#C45C3E) for brand actions; <strong>teal</strong> (#2DD4BF) for AI/signal metrics</li>
+          <li><strong>Typography:</strong> Syne + DM Sans → <strong>Fraunces</strong> (headlines) + <strong>IBM Plex Sans</strong> (UI body) + <strong>IBM Plex Mono</strong> (data)</li>
+          <li><strong>Surfaces:</strong> Cool blue-grays → warm charcoal / cream paper (light mode)</li>
+          <li><strong>Sidebar:</strong> Flat or blue gradient → ink black with copper active state (no rainbow sidebar)</li>
+          <li><strong>Texture:</strong> Subtle grain overlay + restrained shadows instead of glow on every primary button</li>
+        </ul>
+      </article>
+
+      <article class="analysis-card">
+        <h3>Recommended tokens</h3>
+        <div class="swatches">
+          <div class="swatch" style="background:#111418" title="--bg"></div>
+          <div class="swatch" style="background:#181C22" title="--surf"></div>
+          <div class="swatch" style="background:#C45C3E" title="--accent"></div>
+          <div class="swatch" style="background:#2DD4BF" title="--signal"></div>
+          <div class="swatch" style="background:#34D399" title="--grn"></div>
+          <div class="swatch" style="background:#FBBF24" title="--amb"></div>
+          <div class="swatch" style="background:#F87171" title="--red"></div>
+        </div>
+        <div class="type-sample">
+          <div class="type-display">Fraunces — headlines</div>
+          <div class="type-body">IBM Plex Sans — body, buttons, forms</div>
+          <div class="type-mono">IBM Plex Mono — 87 · TOP · OCR</div>
+        </div>
+      </article>
+
+      <article class="analysis-card">
+        <h3>Motion &amp; layout</h3>
+        <ul>
+          <li>Keep your <code>fadeIn</code> page swap; add one orchestrated <code>rise</code> on podium + first card (see mock below)</li>
+          <li>Prefer 12–16px radius; avoid mixing 8px, 10px, 14px without reason</li>
+          <li>Let evidence blocks use a <strong>left copper border</strong> (not indigo) to tie to “human review”</li>
+          <li>Score ring optional: large mono numeral often reads clearer for recruiters scanning a list</li>
+        </ul>
+      </article>
+    </div>
+
+    <p class="section-label">Live mock — AI Matching view (static HTML)</p>
+  </section>
+
+  <div class="app-mock">
+    <div class="app-mock-label">↓ Proposed shell using tokens above · sample data only</div>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="logo-row">
+          <div class="logo-mark">◎</div>
+          <div>
+            <div class="logo-name">The Talent Matrix</div>
+            <div class="logo-tag">Hire smarter, not harder.</div>
+          </div>
+        </div>
+        <div class="sb-section">Workspace</div>
+        <div class="sb-item"><span>Upload Files</span><span class="sb-badge">5</span></div>
+        <div class="sb-item active"><span>AI Matching</span><span class="sb-badge">5</span></div>
+        <div class="sb-section">Tools</div>
+        <div class="sb-item"><span>Chat with Resume</span></div>
+        <div class="sb-item"><span>Interview Kit</span></div>
+        <div class="sb-section">System</div>
+        <div class="sb-item"><span>Settings</span></div>
+        <div class="sb-spacer"></div>
+        <div class="sb-user">
+          <div class="sb-avatar">PS</div>
+          <div>
+            <div style="font-size:12px;font-weight:500">Priyanshi Shah</div>
+            <div style="font-size:10px;color:var(--t3)">Hiring Manager</div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <h2 class="topbar-title">AI Matching</h2>
+          <span class="pill">5 resumes</span>
+          <span class="pill signal">RAG shortlist on</span>
+          <div class="topbar-actions">
+            <button type="button" class="btn-ghost">Compare Top 3</button>
+            <button type="button" class="btn-primary">Run AI Matching</button>
+          </div>
+        </header>
+
+        <div class="content">
+          <div class="match-controls">
+            <select class="match-select" aria-label="Job description">
+              <option>Senior Frontend Engineer — Product Team</option>
+            </select>
+            <button type="button" class="btn-primary">Run AI Matching</button>
+          </div>
+
+          <div class="podium">
+            <div class="podium-slot">
+              <div class="podium-medal">🥇</div>
+              <div class="podium-name">Alex Chen</div>
+              <span class="verdict top">TOP</span>
+            </div>
+            <div class="podium-slot">
+              <div class="podium-medal">🥈</div>
+              <div class="podium-name">Priya Sharma</div>
+              <span class="verdict hold">HOLD</span>
+            </div>
+            <div class="podium-slot">
+              <div class="podium-medal">🥉</div>
+              <div class="podium-name">Jordan Lee</div>
+              <span class="verdict hold">HOLD</span>
+            </div>
+          </div>
+
+          <article class="candidate-card">
+            <div class="card-header">
+              <div class="c-avatar">AC</div>
+              <div class="c-info">
+                <div class="c-name">
+                  Alex Chen
+                  <span class="verdict top">TOP</span>
+                </div>
+                <div class="c-meta">8 yrs · React, TypeScript, design systems · San Francisco</div>
+              </div>
+              <div class="c-score">87<span>overall</span></div>
+            </div>
+            <p class="c-summary">
+              Strong alignment on mandatory React/TS stack and senior IC scope. Evidence from recent product rebuild; authenticity score high with consistent tenure narrative.
+            </p>
+            <div class="mini-bars">
+              <div>
+                <div class="mini-bar-label">Skills</div>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:92%"></div></div>
+                <div class="mini-bar-pct">92%</div>
+              </div>
+              <div>
+                <div class="mini-bar-label">Experience</div>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:88%"></div></div>
+                <div class="mini-bar-pct">88%</div>
+              </div>
+              <div>
+                <div class="mini-bar-label">Domain</div>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:76%"></div></div>
+                <div class="mini-bar-pct">76%</div>
+              </div>
+              <div>
+                <div class="mini-bar-label">Education</div>
+                <div class="mini-bar-track"><div class="mini-bar-fill" style="width:70%"></div></div>
+                <div class="mini-bar-pct">70%</div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <strong>Mandatory:</strong> React + TypeScript — “Led migration of legacy Angular app to React 18 / TS strict mode (2023–2024).”
+            </div>
+            <div class="card-actions">
+              <button type="button" class="btn-ghost">View breakdown</button>
+              <button type="button" class="btn-ghost">Chat</button>
+              <button type="button" class="btn-primary">Interview pack</button>
+            </div>
+          </article>
+
+          <article class="candidate-card">
+            <div class="card-header">
+              <div class="c-avatar" style="background:var(--amb-soft);border-color:rgba(251,191,36,0.35);color:var(--amb)">PS</div>
+              <div class="c-info">
+                <div class="c-name">
+                  Priya Sharma
+                  <span class="verdict hold">HOLD</span>
+                </div>
+                <div class="c-meta">6 yrs · Vue primary, React adjacent · Remote (IST)</div>
+              </div>
+              <div class="c-score" style="color:var(--amb)">71<span>overall</span></div>
+            </div>
+            <p class="c-summary">
+              Meets most nice-to-haves; Vue-heavy stack needs validation on React depth. Consider phone screen on component architecture.
+            </p>
+            <div class="card-actions">
+              <button type="button" class="btn-ghost">View breakdown</button>
+              <button type="button" class="btn-ghost">Better-fit: Backend Engineer</button>
+            </div>
+          </article>
+
+          <div class="token-row">
+            <span class="token">--accent #C45C3E</span>
+            <span class="token">--signal #2DD4BF</span>
+            <span class="token">radius 12 / 16</span>
+            <span class="token">Fraunces 700</span>
+            <span class="token">Plex Mono 600</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

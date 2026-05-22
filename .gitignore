@@ -21,6 +21,11 @@ ENV/
 *.swp
 *.swo
 
+# Local database & uploads
+data/
+*.db
+# Chroma vector index lives under data/chroma/
+
 # Logs & caches
 *.log
 .pytest_cache/

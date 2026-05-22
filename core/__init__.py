@@ -1,1 +1,1 @@
-"""TalentMatch AI core modules."""
+"""The Talent Matrix core modules."""
