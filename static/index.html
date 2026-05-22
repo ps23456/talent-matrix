@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TalentMatch AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --sb: #0B0F1A; --bg: #0F1623; --surf: #141C2E; --card: #1A2338;
+      --hover: #1E2942; --pri: #6366F1; --pri2: #8B5CF6;
+      --pria: rgba(99,102,241,0.12); --prib: rgba(99,102,241,0.25);
+      --grn: #10B981; --amb: #F59E0B; --red: #EF4444;
+      --tx: #E8EEFF; --t2: #8896B8; --t3: #4A5570;
+      --bd: rgba(99,102,241,0.14); --bd2: rgba(99,102,241,0.30);
+      --sb-w: 220px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'DM Sans', sans-serif; font-weight: 400;
+      background: var(--bg); color: var(--tx); font-size: 14px;
+    }
+    .app {
+      display: grid; grid-template-columns: var(--sb-w) 1fr;
+      height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--sb); border-right: 1px solid var(--bd);
+      display: flex; flex-direction: column; padding: 18px 12px;
+      overflow-y: auto;
+    }
+    .logo-block { padding: 4px 8px 20px; }
+    .logo-row { display: flex; align-items: center; gap: 10px; }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--pri), var(--pri2));
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .logo-name {
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px;
+      line-height: 1.2; letter-spacing: -0.02em;
+    }
+    .logo-tag { font-size: 10px; color: var(--t3); margin-top: 2px; }
+    .sb-section {
+      font-size: 9px; font-weight: 500; letter-spacing: 0.12em;
+      color: var(--t3); padding: 14px 10px 6px; text-transform: uppercase;
+    }
+    .sb-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 12px; margin: 2px 0; border-radius: 9px;
+      color: var(--t2); font-size: 13px; cursor: pointer;
+      border: 1px solid transparent; transition: all 0.15s;
+      user-select: none;
+    }
+    .sb-item:hover { background: var(--hover); color: var(--tx); }
+    .sb-item.active {
+      background: var(--pria); color: #A5B4FC;
+      border-color: rgba(99,102,241,0.22);
+    }
+    .sb-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      background: var(--card); color: var(--t2); padding: 2px 7px;
+      border-radius: 10px; min-width: 20px; text-align: center;
+    }
+    .sb-item.active .sb-badge { background: var(--prib); color: #C7D2FE; }
+    .sb-spacer { flex: 1; }
+    .sb-user {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 8px; border-top: 1px solid var(--bd); margin-top: 8px;
+    }
+    .sb-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--pri), var(--pri2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 500; flex-shrink: 0;
+    }
+    .sb-user-name { font-size: 12px; font-weight: 500; }
+    .sb-user-role { font-size: 10px; color: var(--t3); }
+    .sb-kebab { margin-left: auto; color: var(--t3); cursor: pointer; font-size: 16px; }
+
+    /* ── Main ── */
+    .main { display: flex; flex-direction: column; overflow: hidden; }
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--sb); border-bottom: 1px solid var(--bd);
+      padding: 14px 24px; display: flex; align-items: center;
+      gap: 16px; flex-shrink: 0;
+    }
+    .topbar-title {
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+    .topbar-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      font-size: 11px; color: var(--t2); background: var(--card);
+      border: 1px solid var(--bd); padding: 4px 12px; border-radius: 20px;
+    }
+    .pill.amber { color: #FCD34D; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
+    .topbar-actions { margin-left: auto; display: flex; gap: 10px; }
+
+    .content {
+      flex: 1; overflow-y: auto; padding: 20px 24px 32px;
+    }
+    .page { display: none; animation: fadeIn 0.2s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel {
+      background: var(--surf); border: 1px solid var(--bd);
+      border-radius: 14px; padding: 16px; transition: border-color 0.2s;
+    }
+    .panel:hover { border-color: var(--bd2); }
+    .panel-title {
+      font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--pri), var(--pri2));
+      border: none; border-radius: 10px; color: #fff;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      padding: 9px 22px; cursor: pointer; font-size: 13px;
+      transition: filter 0.15s, box-shadow 0.15s; white-space: nowrap;
+    }
+    .btn-primary:hover { filter: brightness(1.12); box-shadow: 0 0 24px rgba(99,102,241,0.35); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: none; box-shadow: none; }
+    .btn-ghost {
+      background: transparent; border: 1px solid var(--bd);
+      border-radius: 8px; color: var(--t2);
+      font-family: 'DM Sans', sans-serif; font-size: 12px;
+      padding: 6px 14px; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-ghost:hover { background: var(--pria); color: #A5B4FC; border-color: var(--bd2); }
+
+    .stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+
+    /* ── Upload page ── */
+    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .dropzone {
+      border: 2px dashed var(--bd2); border-radius: 12px;
+      padding: 32px 20px; text-align: center; cursor: pointer;
+      transition: all 0.2s; position: relative;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-style: solid; border-color: var(--pri);
+      background: var(--pria);
+    }
+    .dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .dropzone-icon { font-size: 28px; margin-bottom: 8px; }
+    .dropzone-text { color: var(--t2); font-size: 13px; }
+    .dropzone-hint { color: var(--t3); font-size: 11px; margin-top: 4px; }
+
+    .jd-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+    .jd-tab {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px;
+      cursor: pointer; color: var(--t2); border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .jd-tab.active {
+      background: var(--pria); color: #A5B4FC; border-color: var(--bd2);
+    }
+    .jd-paste { display: none; }
+    .jd-paste.active { display: block; }
+    .jd-upload-panel { display: none; }
+    .jd-upload-panel.active { display: block; }
+    textarea.jd-textarea {
+      width: 100%; min-height: 120px; background: var(--card);
+      border: 1px solid var(--bd); border-radius: 10px; color: var(--tx);
+      padding: 12px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+      resize: vertical; margin-bottom: 10px;
+    }
+    textarea.jd-textarea:focus { outline: none; border-color: var(--pri); }
+    .jd-title-input {
+      width: 100%; background: var(--card); border: 1px solid var(--bd);
+      border-radius: 8px; color: var(--tx); padding: 8px 12px;
+      font-size: 13px; margin-bottom: 10px;
+    }
+    .jd-title-input:focus { outline: none; border-color: var(--pri); }
+
+    .file-list { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+    .file-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 8px; background: var(--card);
+      font-size: 12px; transition: background 0.15s;
+    }
+    .file-item:hover { background: var(--hover); }
+    .file-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .file-dot.green { background: var(--grn); }
+    .file-dot.indigo { background: var(--pri); }
+    .file-dot.amber { background: var(--amb); }
+    .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-size { color: var(--t3); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+    .ocr-badge {
+      font-size: 9px; padding: 2px 6px; border-radius: 4px;
+      background: rgba(245,158,11,0.15); color: #FCD34D;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .file-del {
+      color: var(--t3); cursor: pointer; font-size: 16px; line-height: 1;
+      padding: 2px 6px; border-radius: 4px; transition: all 0.15s;
+    }
+    .file-del:hover { color: var(--red); background: rgba(239,68,68,0.1); }
+
+    /* ── Match page ── */
+    .match-controls {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 18px; padding: 14px 16px;
+      background: var(--surf); border: 1px solid var(--bd); border-radius: 14px;
+    }
+    .match-select {
+      flex: 1; min-width: 200px; background: var(--card);
+      border: 1px solid var(--bd); border-radius: 10px; color: var(--tx);
+      padding: 9px 14px; font-size: 13px; cursor: pointer;
+    }
+    .match-select:focus { outline: none; border-color: var(--pri); }
+    .log-area {
+      display: none; margin-bottom: 16px; padding: 12px 16px;
+      background: var(--card); border: 1px solid var(--bd);
+      border-radius: 10px; font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--t2); max-height: 120px; overflow-y: auto;
+    }
+    .log-area.active { display: block; }
+    .log-line { padding: 3px 0; animation: logPulse 0.4s ease; }
+    .log-line.done { color: var(--grn); }
+    @keyframes logPulse {
+      from { opacity: 0; transform: translateX(-4px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .candidates { display: flex; flex-direction: column; gap: 16px; }
+    .candidate-card {
+      background: var(--surf); border: 1px solid var(--bd);
+      border-radius: 14px; padding: 20px; transition: border-color 0.2s;
+      animation: cardIn 0.35s ease backwards;
+    }
+    .candidate-card:hover { border-color: var(--bd2); }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .card-header { display: flex; gap: 16px; align-items: flex-start; }
+    .c-avatar {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+    }
+    .c-info { flex: 1; min-width: 0; }
+    .c-name {
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .c-meta { color: var(--t2); font-size: 12px; margin-top: 3px; }
+    .c-score-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+    .c-score-svg { transform: rotate(-90deg); }
+    .c-score-num {
+      position: absolute; inset: 0; display: flex; align-items: center;
+      justify-content: center; font-family: 'JetBrains Mono', monospace;
+      font-weight: 600; font-size: 18px;
+    }
+    .verdict-tag {
+      font-size: 10px; font-weight: 500; padding: 3px 10px;
+      border-radius: 20px; letter-spacing: 0.04em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .verdict-tag.top { background: rgba(16,185,129,0.14); color: #34D399; }
+    .verdict-tag.hold { background: rgba(245,158,11,0.14); color: #FCD34D; }
+    .verdict-tag.reject { background: rgba(239,68,68,0.14); color: #FCA5A5; }
+    .better-fit-pill {
+      font-size: 10px; padding: 3px 10px; border-radius: 20px;
+      background: rgba(99,102,241,0.14); color: #A5B4FC; margin-top: 6px;
+      display: inline-block;
+    }
+    .c-summary { color: var(--t2); font-size: 13px; line-height: 1.55; margin: 14px 0; }
+
+    .mini-bars {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin-bottom: 16px;
+    }
+    .mini-bar-label { font-size: 10px; color: var(--t3); margin-bottom: 5px; }
+    .mini-bar-track {
+      height: 3px; background: var(--card); border-radius: 2px; overflow: hidden;
+    }
+    .mini-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+    .mini-bar-pct {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--t2); margin-top: 4px;
+    }
+
+    .card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .breakdown {
+      max-height: 0; overflow: hidden; transition: max-height 0.35s ease;
+      margin-top: 0;
+    }
+    .breakdown.open { max-height: 600px; margin-top: 16px; }
+    .breakdown-inner {
+      padding-top: 16px; border-top: 1px solid var(--bd);
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .bd-row { display: grid; grid-template-columns: 140px 1fr 36px; gap: 12px; align-items: start; }
+    .bd-label { font-size: 11px; color: var(--t2); padding-top: 2px; }
+    .bd-track { height: 6px; background: var(--card); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .bd-fill { height: 100%; border-radius: 3px; }
+    .bd-reason { font-size: 10px; color: var(--t3); margin-top: 4px; grid-column: 2; }
+    .bd-pct { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--t2); text-align: right; }
+
+    .empty-state {
+      text-align: center; padding: 48px 24px; color: var(--t3);
+    }
+    .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state h3 {
+      font-family: 'Syne', sans-serif; color: var(--t2); font-size: 16px; margin-bottom: 6px;
+    }
+
+    /* ── Chat page ── */
+    .chat-grid { display: grid; grid-template-columns: 35% 65%; gap: 18px; height: calc(100vh - 140px); min-height: 400px; }
+    .chat-left, .chat-right { display: flex; flex-direction: column; min-height: 0; }
+    .chat-select {
+      width: 100%; background: var(--card); border: 1px solid var(--bd);
+      border-radius: 10px; color: var(--tx); padding: 9px 12px;
+      font-size: 13px; margin-bottom: 12px;
+    }
+    .resume-preview {
+      flex: 1; background: var(--card); border: 1px solid var(--bd);
+      border-radius: 10px; padding: 12px; overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      line-height: 1.6; color: var(--t2); white-space: pre-wrap;
+    }
+    .chat-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; font-family: 'Syne', sans-serif; font-weight: 600;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--grn);
+      animation: pulse 1.5s ease infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+    }
+    .chat-messages {
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+      gap: 12px; padding-right: 4px; margin-bottom: 12px;
+    }
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+    .msg.user {
+      align-self: flex-end; background: linear-gradient(135deg, var(--pri), var(--pri2));
+      color: #fff; border-bottom-right-radius: 4px;
+    }
+    .msg.ai {
+      align-self: flex-start; background: var(--card); border: 1px solid var(--bd);
+      border-bottom-left-radius: 4px; color: var(--tx);
+    }
+    .suggestion-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .chip {
+      font-size: 11px; padding: 5px 12px; border-radius: 20px;
+      background: var(--card); border: 1px solid var(--bd); color: var(--t2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .chip:hover { background: var(--pria); color: #A5B4FC; border-color: var(--bd2); }
+    .chat-input-row { display: flex; gap: 8px; }
+    .chat-input {
+      flex: 1; background: var(--card); border: 1px solid var(--bd);
+      border-radius: 10px; color: var(--tx); padding: 10px 14px; font-size: 13px;
+    }
+    .chat-input:focus { outline: none; border-color: var(--pri); }
+    .chat-send {
+      width: 42px; height: 42px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, var(--pri), var(--pri2));
+      color: #fff; cursor: pointer; font-size: 16px;
+      transition: filter 0.15s;
+    }
+    .chat-send:hover { filter: brightness(1.12); }
+
+    /* ── Interview page ── */
+    .interview-top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+    .interview-select {
+      flex: 1; min-width: 200px; background: var(--card);
+      border: 1px solid var(--bd); border-radius: 10px; color: var(--tx);
+      padding: 9px 14px; font-size: 13px;
+    }
+    .iq-sections { display: flex; flex-direction: column; gap: 10px; }
+    .iq-section {
+      background: var(--surf); border: 1px solid var(--bd);
+      border-radius: 12px; overflow: hidden;
+    }
+    .iq-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px; cursor: pointer; user-select: none;
+      transition: background 0.15s;
+    }
+    .iq-header:hover { background: var(--hover); }
+    .iq-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .iq-title { flex: 1; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 13px; }
+    .iq-count {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      color: var(--t3); background: var(--card); padding: 2px 8px; border-radius: 10px;
+    }
+    .iq-chevron { color: var(--t3); transition: transform 0.2s; }
+    .iq-section.open .iq-chevron { transform: rotate(180deg); }
+    .iq-body {
+      max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+    }
+    .iq-section.open .iq-body { max-height: 800px; }
+    .iq-questions { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 12px; }
+    .iq-q {
+      padding: 12px; background: var(--card); border-radius: 10px;
+      border: 1px solid var(--bd); transition: opacity 0.2s;
+    }
+    .iq-q.asked { opacity: 0.45; }
+    .iq-q.asked .iq-q-text { text-decoration: line-through; }
+    .iq-q-text { font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
+    .iq-why { font-size: 11px; color: var(--t3); font-style: italic; }
+    .iq-check {
+      display: flex; align-items: center; gap: 6px; margin-top: 8px;
+      font-size: 11px; color: var(--t2); cursor: pointer;
+    }
+    .iq-check input { accent-color: var(--pri); }
+
+    /* ── Settings drawer ── */
+    .drawer-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .settings-drawer {
+      position: fixed; top: 0; right: 0; width: 320px; height: 100%;
+      background: var(--sb); border-left: 1px solid var(--bd2);
+      z-index: 201; transform: translateX(100%);
+      transition: transform 0.25s ease; padding: 24px;
+      display: flex; flex-direction: column;
+    }
+    .settings-drawer.open { transform: translateX(0); }
+    .drawer-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px;
+    }
+    .drawer-head h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; }
+    .drawer-close { background: none; border: none; color: var(--t2); font-size: 22px; cursor: pointer; }
+    .setting-row {
+      padding: 14px 0; border-bottom: 1px solid var(--bd);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .setting-label { font-size: 13px; color: var(--t2); }
+    .setting-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .key-ok { color: var(--grn); }
+    .key-miss { color: var(--red); }
+    .btn-danger {
+      margin-top: auto; background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3); color: #FCA5A5;
+      border-radius: 10px; padding: 10px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      transition: background 0.15s;
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.22); }
+    .app-version { font-size: 11px; color: var(--t3); text-align: center; margin-top: 12px; }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      z-index: 300; display: none; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surf); border: 1px solid var(--bd2);
+      border-radius: 16px; padding: 24px; width: 100%; max-width: 560px;
+      animation: fadeIn 0.2s ease;
+    }
+    .modal-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-head h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; }
+    .chart-wrap { position: relative; height: 340px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--card); border: 1px solid var(--bd2);
+      border-radius: 10px; padding: 12px 18px;
+      font-size: 13px; color: var(--tx); z-index: 1000;
+      animation: slideUp 0.25s ease;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .toast.error { border-color: rgba(239,68,68,0.4); }
+    .toast.success { border-color: rgba(16,185,129,0.4); }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .upload-grid, .chat-grid { grid-template-columns: 1fr; }
+      .mini-bars { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo-block">
+        <div class="logo-row">
+          <div class="logo-mark">🎯</div>
+          <div>
+            <div class="logo-name">TalentMatch AI</div>
+            <div class="logo-tag">Hire smarter, not harder.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sb-section">Workspace</div>
+      <div class="sb-item active" data-page="upload" onclick="navigate('upload')">
+        <span>Upload Files</span>
+        <span class="sb-badge" id="badge-resumes">0</span>
+      </div>
+      <div class="sb-item" data-page="match" onclick="navigate('match')">
+        <span>AI Matching</span>
+        <span class="sb-badge" id="badge-match">0</span>
+      </div>
+
+      <div class="sb-section">Tools</div>
+      <div class="sb-item" data-page="chat" onclick="navigate('chat')">
+        <span>Chat with Resume</span>
+      </div>
+      <div class="sb-item" data-page="interview" onclick="navigate('interview')">
+        <span>Interview Kit</span>
+      </div>
+
+      <div class="sb-section">System</div>
+      <div class="sb-item" data-page="settings" onclick="openSettings()">
+        <span>Settings</span>
+      </div>
+
+      <div class="sb-spacer"></div>
+      <div class="sb-user">
+        <div class="sb-avatar">JD</div>
+        <div>
+          <div class="sb-user-name">Jane Doe</div>
+          <div class="sb-user-role">Hiring Manager</div>
+        </div>
+        <span class="sb-kebab">⋮</span>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <h1 class="topbar-title" id="page-title">Upload Files</h1>
+        <div class="topbar-pills" id="topbar-pills"></div>
+        <div class="topbar-actions" id="topbar-actions"></div>
+      </header>
+
+      <div class="content">
+        <!-- PAGE: Upload -->
+        <div id="page-upload" class="page active">
+          <div class="stats-row" id="upload-stats"></div>
+          <div class="upload-grid">
+            <div class="panel">
+              <div class="panel-title">📄 Resumes</div>
+              <div class="dropzone" id="resume-dropzone">
+                <input type="file" multiple accept=".pdf" id="resume-input" />
+                <div class="dropzone-icon">📎</div>
+                <div class="dropzone-text">Drop PDF resumes here</div>
+                <div class="dropzone-hint">or click to browse · multiple files OK</div>
+              </div>
+              <div class="file-list" id="resume-file-list"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">📋 Job Descriptions</div>
+              <div class="jd-tabs">
+                <span class="jd-tab active" data-tab="upload" onclick="switchJdTab('upload')">Upload PDF</span>
+                <span class="jd-tab" data-tab="paste" onclick="switchJdTab('paste')">Paste Text</span>
+              </div>
+              <div class="jd-upload-panel active" id="jd-upload-panel">
+                <div class="dropzone" id="jd-dropzone">
+                  <input type="file" accept=".pdf" id="jd-input" />
+                  <div class="dropzone-icon">📋</div>
+                  <div class="dropzone-text">Drop JD PDF here</div>
+                  <div class="dropzone-hint">PDF job descriptions</div>
+                </div>
+              </div>
+              <div class="jd-paste" id="jd-paste-panel">
+                <input class="jd-title-input" id="jd-title-input" placeholder="JD Title (e.g. Senior Frontend Engineer)" />
+                <textarea class="jd-textarea" id="jd-text-input" placeholder="Paste full job description text here..."></textarea>
+                <button class="btn-primary" onclick="addJdFromText()">Add JD</button>
+              </div>
+              <div class="file-list" id="jd-file-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGE: Match -->
+        <div id="page-match" class="page">
+          <div class="match-controls">
+            <select class="match-select" id="jd-select"></select>
+            <button class="btn-primary" id="run-match-btn" onclick="runMatching()">🚀 Run AI Matching</button>
+          </div>
+          <div class="log-area" id="log-area"></div>
+          <div class="candidates" id="candidates-container"></div>
+        </div>
+
+        <!-- PAGE: Chat -->
+        <div id="page-chat" class="page">
+          <div class="chat-grid">
+            <div class="chat-left panel" style="padding:16px">
+              <div class="panel-title" style="margin-bottom:10px">Candidate</div>
+              <select class="chat-select" id="chat-candidate-select" onchange="onChatCandidateChange()"></select>
+              <div class="panel-title" style="margin:14px 0 8px;font-size:11px;color:var(--t3);letter-spacing:0.08em">RESUME PREVIEW</div>
+              <div class="resume-preview" id="resume-preview"></div>
+            </div>
+            <div class="chat-right panel" style="padding:16px">
+              <div class="chat-header">
+                <span class="pulse-dot"></span>
+                <span id="chat-header-label">Ask about candidate</span>
+              </div>
+              <div class="chat-messages" id="chat-messages"></div>
+              <div class="suggestion-chips" id="suggestion-chips">
+                <span class="chip" onclick="fillChat('Any leadership roles?')">Any leadership roles?</span>
+                <span class="chip" onclick="fillChat('AWS experience?')">AWS experience?</span>
+                <span class="chip" onclick="fillChat('Remote availability?')">Remote availability?</span>
+                <span class="chip" onclick="fillChat('GraphQL exposure?')">GraphQL exposure?</span>
+              </div>
+              <div class="chat-input-row">
+                <input class="chat-input" id="chat-input" placeholder="Ask anything about this candidate..." onkeydown="if(event.key==='Enter')sendChat()" />
+                <button class="chat-send" onclick="sendChat()">➤</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGE: Interview -->
+        <div id="page-interview" class="page">
+          <div class="interview-top">
+            <select class="interview-select" id="interview-candidate-select"></select>
+            <button class="btn-primary" onclick="generateInterview()">Generate Questions</button>
+            <button class="btn-ghost" onclick="exportInterview()">Export</button>
+          </div>
+          <div class="iq-sections" id="iq-sections">
+            <div class="empty-state" id="interview-empty">
+              <div class="empty-icon">🎤</div>
+              <h3>No questions yet</h3>
+              <p>Select a candidate and click Generate Questions</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeSettings()"></div>
+  <aside class="settings-drawer" id="settings-drawer">
+    <div class="drawer-head">
+      <h2>Settings</h2>
+      <button class="drawer-close" onclick="closeSettings()">×</button>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">LLM Provider</span>
+      <span class="setting-val" id="set-provider">openai</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">API Key Status</span>
+      <span class="setting-val key-ok" id="set-key-status">✅ Configured</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Mistral OCR</span>
+      <span class="setting-val key-miss" id="set-mistral">❌ Not set</span>
+    </div>
+    <button class="btn-danger" onclick="clearAllData()">Clear All Data</button>
+    <div class="app-version">TalentMatch AI v1.0.0</div>
+  </aside>
+
+  <div class="modal-backdrop" id="compare-modal" onclick="if(event.target===this)closeCompareModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <h2>Compare Top 3</h2>
+        <button class="drawer-close" onclick="closeCompareModal()">×</button>
+      </div>
+      <div class="chart-wrap"><canvas id="radar-chart"></canvas></div>
+    </div>
+  </div>
+
+  <script>
+    const CRITERIA_LABELS = {
+      mandatory_skills: 'Mandatory Skills',
+      relevant_experience: 'Relevant Experience',
+      domain_experience: 'Domain Experience',
+      education: 'Education',
+      certification_fit: 'Certification Fit',
+      recent_usage: 'Recent Usage',
+      seniority_fit: 'Seniority Fit',
+      location_availability: 'Location',
+    };
+    const MINI_KEYS = ['mandatory_skills', 'relevant_experience', 'domain_experience', 'education'];
+    const MINI_LABELS = ['Skills', 'Experience', 'Domain', 'Education'];
+    const AVATAR_COLORS = [
+      'rgba(99,102,241,0.25)', 'rgba(16,185,129,0.2)',
+      'rgba(245,158,11,0.2)', 'rgba(239,68,68,0.18)',
+    ];
+    const AVATAR_TEXT = ['#A5B4FC', '#34D399', '#FCD34D', '#FCA5A5'];
+
+    const appState = {
+      resumes: [],
+      jds: [],
+      matchResults: [],
+      selectedJdId: null,
+      activePage: 'upload',
+      chatTarget: null,
+      interviewTarget: null,
+      chatHistory: {},
+      interviewQuestions: null,
+      matchHasRun: false,
+    };
+
+    /** Single gateway for all backend routes (app.py only). */
+    const API = {
+      async request(path, options = {}) {
+        const res = await fetch(path, options);
+        let data = {};
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          try { data = await res.json(); } catch (_) { data = {}; }
+        }
+        if (!res.ok) {
+          const msg = data.detail || data.message || `Request failed (${res.status})`;
+          throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+        }
+        return data;
+      },
+      getFiles: () => API.request('/api/files'),
+      getResume: (id) => API.request(`/api/resume/${id}`),
+      uploadResume: (formData) => API.request('/api/upload/resume', { method: 'POST', body: formData }),
+      uploadJd: (formData) => API.request('/api/upload/jd', { method: 'POST', body: formData }),
+      uploadJdText: (body) => API.request('/api/upload/jd-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+      deleteResume: (id) => API.request(`/api/resume/${id}`, { method: 'DELETE' }),
+      deleteJd: (id) => API.request(`/api/jd/${id}`, { method: 'DELETE' }),
+      match: (jdId) => API.request('/api/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd_id: jdId }),
+      }),
+      chat: (candidateId, message) => API.request('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidate_id: candidateId, message }),
+      }),
+      interview: (candidateId, jdId) => API.request('/api/interview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidate_id: candidateId, jd_id: jdId || null }),
+      }),
+      settings: () => API.request('/api/settings'),
+      clear: () => API.request('/api/clear', { method: 'DELETE' }),
+    };
+
+    const PAGE_TITLES = {
+      upload: 'Upload Files',
+      match: 'AI Matching',
+      chat: 'Chat with Resume',
+      interview: 'Interview Kit',
+    };
+
+    let radarChart = null;
+
+    function hashName(name) {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      return Math.abs(h);
+    }
+
+    function scoreColor(score) {
+      if (score >= 75) return 'var(--grn)';
+      if (score >= 55) return 'var(--amb)';
+      return 'var(--red)';
+    }
+
+    function verdictClass(v) {
+      if (v === 'TOP_MATCH') return 'top';
+      if (v === 'HOLD') return 'hold';
+      return 'reject';
+    }
+
+    function verdictLabel(v) {
+      if (v === 'TOP_MATCH') return 'TOP MATCH';
+      if (v === 'HOLD') return 'HOLD';
+      return 'REJECT';
+    }
+
+    function showToast(msg, type = 'info') {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    function escHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str ?? '';
+      return d.innerHTML;
+    }
+
+    async function loadFiles() {
+      try {
+        const data = await API.getFiles();
+        appState.resumes = data.resumes || [];
+        appState.jds = data.jds || [];
+        if (!appState.selectedJdId && appState.jds.length) {
+          appState.selectedJdId = appState.jds[0].id;
+        }
+        if (appState.selectedJdId && !appState.jds.find(j => j.id === appState.selectedJdId)) {
+          appState.selectedJdId = appState.jds[0]?.id || null;
+        }
+        if (!appState.chatTarget && appState.resumes.length) {
+          appState.chatTarget = appState.resumes[0].id;
+        }
+        if (!appState.interviewTarget && appState.resumes.length) {
+          appState.interviewTarget = appState.resumes[0].id;
+        }
+        renderResumeList();
+        renderJdList();
+        renderChatSelect();
+        renderInterviewSelect();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const s = await API.settings();
+        document.getElementById('set-provider').textContent = s.provider || 'openai';
+        const active = s.active_key_set || s.keys?.[s.provider];
+        const el = document.getElementById('set-key-status');
+        el.textContent = active ? '✅ Configured' : '❌ Not set';
+        el.className = 'setting-val ' + (active ? 'key-ok' : 'key-miss');
+        const mistral = document.getElementById('set-mistral');
+        const hasMistral = s.keys?.mistral;
+        mistral.textContent = hasMistral ? '✅ Configured' : '❌ Not set';
+        mistral.className = 'setting-val ' + (hasMistral ? 'key-ok' : 'key-miss');
+      } catch (_) { /* non-blocking */ }
+    }
+
+    function navigate(page) {
+      appState.activePage = page;
+      document.querySelectorAll('.sb-item[data-page]').forEach(el => {
+        el.classList.toggle('active', el.dataset.page === page);
+      });
+      document.querySelectorAll('.page').forEach(el => {
+        el.classList.toggle('active', el.id === `page-${page}`);
+      });
+      document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
+      updateTopbar();
+      if (page === 'chat') renderChat();
+      if (page === 'interview') renderInterviewSelect();
+    }
+
+    function updateTopbar() {
+      const pills = document.getElementById('topbar-pills');
+      const actions = document.getElementById('topbar-actions');
+      const ocrCount = appState.resumes.filter(r => r.ocr_used).length;
+      pills.innerHTML = `
+        <span class="pill">${appState.resumes.length} resumes</span>
+        <span class="pill">${appState.jds.length} JDs</span>
+        ${ocrCount ? `<span class="pill amber">${ocrCount} OCR processed</span>` : ''}
+      `;
+      actions.innerHTML = '';
+      if (appState.activePage === 'match' && appState.matchResults.length >= 3) {
+        actions.innerHTML = '<button class="btn-ghost" onclick="openCompareModal()">Compare Top 3</button>';
+      }
+      if (appState.activePage === 'upload') {
+        actions.innerHTML = '<button class="btn-ghost" onclick="navigate(\'match\')">Go to Matching →</button>';
+      }
+      updateBadges();
+    }
+
+    function updateBadges() {
+      document.getElementById('badge-resumes').textContent = appState.resumes.length;
+      document.getElementById('badge-match').textContent =
+        appState.matchHasRun ? appState.matchResults.length : '0';
+    }
+
+    /* ── Upload page ── */
+    function renderUploadStats() {
+      const ocr = appState.resumes.filter(r => r.ocr_used).length;
+      document.getElementById('upload-stats').innerHTML = `
+        <span class="pill">${appState.resumes.length} resumes loaded</span>
+        <span class="pill">${appState.jds.length} JDs loaded</span>
+        ${ocr ? `<span class="pill amber">${ocr} OCR processed</span>` : ''}
+      `;
+    }
+
+    function renderResumeList() {
+      const list = document.getElementById('resume-file-list');
+      if (!appState.resumes.length) {
+        list.innerHTML = '<div style="color:var(--t3);font-size:12px;padding:8px 0">No resumes uploaded yet</div>';
+      } else {
+        list.innerHTML = appState.resumes.map(r => `
+        <div class="file-item">
+          <span class="file-dot ${r.ocr_used ? 'amber' : 'green'}"></span>
+          <span class="file-name">${escHtml(r.name)}</span>
+          ${r.ocr_used ? '<span class="ocr-badge">OCR</span>' : ''}
+          <span class="file-size">${r.size_kb} KB</span>
+          <span class="file-del" onclick="removeResume('${r.id}')" title="Remove">×</span>
+        </div>
+      `).join('');
+      }
+      renderUploadStats();
+      updateTopbar();
+    }
+
+    function renderJdList() {
+      const list = document.getElementById('jd-file-list');
+      if (!appState.jds.length) {
+        list.innerHTML = '<div style="color:var(--t3);font-size:12px;padding:8px 0">No job descriptions yet</div>';
+      } else {
+        list.innerHTML = appState.jds.map(j => `
+        <div class="file-item">
+          <span class="file-dot indigo"></span>
+          <span class="file-name">${escHtml(j.title)}</span>
+          <span class="file-del" onclick="removeJd('${j.id}')" title="Remove">×</span>
+        </div>
+      `).join('');
+      }
+      renderUploadStats();
+      updateJdSelect();
+      updateTopbar();
+    }
+
+    async function removeResume(id) {
+      try {
+        await API.deleteResume(id);
+        appState.matchResults = appState.matchResults.filter(c => c.candidate_id !== id);
+        delete appState.chatHistory[id];
+        await loadFiles();
+        showToast('Resume removed', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function removeJd(id) {
+      try {
+        await API.deleteJd(id);
+        if (appState.selectedJdId === id) appState.selectedJdId = null;
+        await loadFiles();
+        showToast('Job description removed', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function switchJdTab(tab) {
+      document.querySelectorAll('.jd-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      document.getElementById('jd-upload-panel').classList.toggle('active', tab === 'upload');
+      document.getElementById('jd-paste-panel').classList.toggle('active', tab === 'paste');
+    }
+
+    async function addJdFromText() {
+      const title = document.getElementById('jd-title-input').value.trim();
+      const text = document.getElementById('jd-text-input').value.trim();
+      if (!text) { showToast('Please paste JD content', 'error'); return; }
+      try {
+        const data = await API.uploadJdText({ title: title || 'Untitled JD', text });
+        document.getElementById('jd-title-input').value = '';
+        document.getElementById('jd-text-input').value = '';
+        await loadFiles();
+        showToast(`Added JD: ${data.title}`, 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function setupDropzones() {
+      [['resume-dropzone', 'resume-input', handleResumeFiles],
+       ['jd-dropzone', 'jd-input', handleJdFile]].forEach(([zoneId, inputId, handler]) => {
+        const zone = document.getElementById(zoneId);
+        const input = document.getElementById(inputId);
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', e => {
+          e.preventDefault(); zone.classList.remove('dragover');
+          handler(e.dataTransfer.files);
+        });
+        input.addEventListener('change', () => handler(input.files));
+      });
+    }
+
+    async function handleResumeFiles(files) {
+      const pdfs = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+      if (!pdfs.length) {
+        showToast('Please upload PDF files only', 'error');
+        return;
+      }
+      let uploaded = 0;
+      for (const f of pdfs) {
+        const fd = new FormData();
+        fd.append('file', f);
+        try {
+          const data = await API.uploadResume(fd);
+          if (data.warning) {
+            showToast(data.warning, 'error');
+          } else {
+            uploaded++;
+            showToast(`Uploaded ${data.name}`, 'success');
+          }
+        } catch (e) {
+          showToast(`${f.name}: ${e.message}`, 'error');
+        }
+      }
+      await loadFiles();
+      if (uploaded > 1) showToast(`${uploaded} resumes uploaded`, 'success');
+    }
+
+    async function handleJdFile(files) {
+      const f = files[0];
+      if (!f) return;
+      if (!f.name.toLowerCase().endsWith('.pdf')) {
+        showToast('Please upload a PDF file', 'error');
+        return;
+      }
+      const fd = new FormData();
+      fd.append('file', f);
+      try {
+        const data = await API.uploadJd(fd);
+        if (data.warning) {
+          showToast(data.warning, 'error');
+        } else {
+          showToast(`Uploaded JD: ${data.title}`, 'success');
+        }
+        await loadFiles();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    /* ── Match page ── */
+    function updateJdSelect() {
+      const sel = document.getElementById('jd-select');
+      sel.innerHTML = appState.jds.map(j =>
+        `<option value="${j.id}" ${j.id === appState.selectedJdId ? 'selected' : ''}>${j.title}</option>`
+      ).join('');
+      sel.onchange = () => { appState.selectedJdId = sel.value; };
+    }
+
+    function renderScoreCircle(score, id) {
+      const r = 28, c = 2 * Math.PI * r;
+      const offset = c - (score / 100) * c;
+      const color = scoreColor(score);
+      return `
+        <div class="c-score-wrap">
+          <svg class="c-score-svg" width="64" height="64" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--card)" stroke-width="5"/>
+            <circle class="score-ring" id="ring-${id}" cx="32" cy="32" r="${r}" fill="none"
+              stroke="${color}" stroke-width="5" stroke-linecap="round"
+              stroke-dasharray="${c}" stroke-dashoffset="${c}"
+              data-circumference="${c}" data-target="${offset}"/>
+          </svg>
+          <div class="c-score-num" style="color:${color}">${score}</div>
+        </div>`;
+    }
+
+    function animateRings() {
+      document.querySelectorAll('.score-ring').forEach(ring => {
+        const target = ring.dataset.target;
+        requestAnimationFrame(() => {
+          ring.style.transition = 'stroke-dashoffset 1s ease';
+          ring.style.strokeDashoffset = target;
+        });
+      });
+    }
+
+    function renderCandidateCard(c, idx) {
+      const h = hashName(c.candidate_name);
+      const avBg = AVATAR_COLORS[h % AVATAR_COLORS.length];
+      const avTx = AVATAR_TEXT[h % AVATAR_TEXT.length];
+      const initials = c.candidate_name.split(' ').map(n => n[0]).join('').slice(0, 2);
+      const miniBars = MINI_KEYS.map((k, i) => {
+        const s = c.scores[k]?.score || 0;
+        const col = scoreColor(s);
+        return `
+          <div>
+            <div class="mini-bar-label">${MINI_LABELS[i]}</div>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:0%;background:${col}" data-width="${s}%"></div></div>
+            <div class="mini-bar-pct">${s}%</div>
+          </div>`;
+      }).join('');
+
+      const breakdown = Object.entries(c.scores).map(([k, v]) => `
+        <div class="bd-row">
+          <span class="bd-label">${CRITERIA_LABELS[k] || k}</span>
+          <div>
+            <div class="bd-track"><div class="bd-fill" style="width:${v.score}%;background:${scoreColor(v.score)}"></div></div>
+            <div class="bd-reason">${v.reason}</div>
+          </div>
+          <span class="bd-pct">${v.score}</span>
+        </div>`).join('');
+
+      return `
+        <div class="candidate-card" style="animation-delay:${idx * 0.08}s">
+          <div class="card-header">
+            <div class="c-avatar" style="background:${avBg};color:${avTx}">${initials}</div>
+            <div class="c-info">
+              <div class="c-name">
+                ${c.candidate_name}
+                <span class="verdict-tag ${verdictClass(c.verdict)}">${verdictLabel(c.verdict)}</span>
+              </div>
+              <div class="c-meta">${c.role_title} · ${c.years_experience} yrs · ${c.location}</div>
+              ${c.better_fit_jd ? `<span class="better-fit-pill">Better fit for: ${c.better_fit_jd}</span>` : ''}
+            </div>
+            ${renderScoreCircle(c.overall_score, c.candidate_id)}
+          </div>
+          <p class="c-summary">${c.summary}</p>
+          <div class="mini-bars">${miniBars}</div>
+          <div class="card-actions">
+            <button class="btn-ghost" onclick="goChat('${c.candidate_id}')">Chat</button>
+            <button class="btn-ghost" onclick="goInterview('${c.candidate_id}')">Interview Kit</button>
+            <button class="btn-ghost" onclick="toggleBreakdown('${c.candidate_id}')">Full Breakdown <span id="bd-arrow-${c.candidate_id}">▼</span></button>
+          </div>
+          <div class="breakdown" id="breakdown-${c.candidate_id}">
+            <div class="breakdown-inner">${breakdown}</div>
+          </div>
+        </div>`;
+    }
+
+    function renderCandidates() {
+      const container = document.getElementById('candidates-container');
+      if (!appState.matchHasRun || !appState.matchResults.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🎯</div>
+            <h3>No matches yet</h3>
+            <p>Upload resumes and a JD, then click Run AI Matching</p>
+          </div>`;
+        return;
+      }
+      const sorted = [...appState.matchResults].sort((a, b) => b.overall_score - a.overall_score);
+      container.innerHTML = sorted.map((c, i) => renderCandidateCard(c, i)).join('');
+      setTimeout(() => {
+        document.querySelectorAll('.mini-bar-fill').forEach(el => {
+          el.style.width = el.dataset.width;
+        });
+        animateRings();
+      }, 100);
+    }
+
+    function toggleBreakdown(id) {
+      const el = document.getElementById(`breakdown-${id}`);
+      const arrow = document.getElementById(`bd-arrow-${id}`);
+      el.classList.toggle('open');
+      arrow.textContent = el.classList.contains('open') ? '▲' : '▼';
+    }
+
+    async function runMatching() {
+      if (!appState.resumes.length) { showToast('Upload at least one resume first', 'error'); return; }
+      if (!appState.jds.length) { showToast('Add a job description first', 'error'); return; }
+      const jdId = document.getElementById('jd-select').value || appState.selectedJdId;
+      if (!jdId) { showToast('Select a job description', 'error'); return; }
+      const btn = document.getElementById('run-match-btn');
+      const log = document.getElementById('log-area');
+      btn.disabled = true;
+      log.classList.add('active');
+      log.innerHTML = '';
+      const names = appState.resumes.map(r => r.name);
+      try {
+        for (let i = 0; i < names.length; i++) {
+          await new Promise(r => setTimeout(r, 300));
+          const line = document.createElement('div');
+          line.className = 'log-line';
+          line.textContent = `Analyzing ${names[i]}...`;
+          log.appendChild(line);
+          log.scrollTop = log.scrollHeight;
+        }
+        const data = await API.match(jdId);
+        appState.matchResults = data.results || [];
+        appState.matchHasRun = true;
+        appState.selectedJdId = jdId;
+        log.innerHTML += `<div class="log-line done">✓ ${appState.matchResults.length} candidates ranked</div>`;
+        renderCandidates();
+        updateTopbar();
+        showToast('AI matching complete!', 'success');
+      } catch (e) {
+        log.innerHTML += `<div class="log-line" style="color:var(--red)">${escHtml(e.message)}</div>`;
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        setTimeout(() => log.classList.remove('active'), 4000);
+      }
+    }
+
+    function goChat(id) {
+      appState.chatTarget = id;
+      navigate('chat');
+    }
+
+    function goInterview(id) {
+      appState.interviewTarget = id;
+      appState.interviewQuestions = null;
+      navigate('interview');
+      renderInterviewSections();
+    }
+
+    /* ── Compare modal ── */
+    function openCompareModal() {
+      document.getElementById('compare-modal').classList.add('open');
+      const top3 = [...appState.matchResults].sort((a, b) => b.overall_score - a.overall_score).slice(0, 3);
+      const labels = Object.values(CRITERIA_LABELS);
+      const keys = Object.keys(CRITERIA_LABELS);
+      const datasets = top3.map((c, i) => ({
+        label: c.candidate_name,
+        data: keys.map(k => c.scores[k]?.score || 0),
+        backgroundColor: ['rgba(99,102,241,0.15)', 'rgba(16,185,129,0.12)', 'rgba(245,158,11,0.12)'][i],
+        borderColor: ['#6366F1', '#10B981', '#F59E0B'][i],
+        borderWidth: 2,
+        pointBackgroundColor: ['#6366F1', '#10B981', '#F59E0B'][i],
+      }));
+      if (radarChart) radarChart.destroy();
+      radarChart = new Chart(document.getElementById('radar-chart'), {
+        type: 'radar',
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            r: {
+              min: 0, max: 100,
+              grid: { color: 'rgba(99,102,241,0.12)' },
+              angleLines: { color: 'rgba(99,102,241,0.12)' },
+              pointLabels: { color: '#8896B8', font: { size: 10, family: 'DM Sans' } },
+              ticks: { display: false },
+            },
+          },
+          plugins: { legend: { labels: { color: '#E8EEFF', font: { family: 'DM Sans' } } } },
+        },
+      });
+    }
+
+    function closeCompareModal() {
+      document.getElementById('compare-modal').classList.remove('open');
+    }
+
+    /* ── Chat ── */
+    function getChatCandidates() {
+      if (appState.matchResults.length) {
+        return appState.matchResults.map(c => ({
+          id: c.candidate_id,
+          label: `${c.candidate_name} — ${c.overall_score}`,
+        }));
+      }
+      return appState.resumes.map(r => ({
+        id: r.id,
+        label: r.name,
+      }));
+    }
+
+    function renderChatSelect() {
+      const sel = document.getElementById('chat-candidate-select');
+      const candidates = getChatCandidates();
+      if (!candidates.length) {
+        sel.innerHTML = '<option value="">Upload resumes first</option>';
+        return;
+      }
+      if (!appState.chatTarget || !candidates.find(c => c.id === appState.chatTarget)) {
+        appState.chatTarget = candidates[0].id;
+      }
+      sel.innerHTML = candidates.map(c =>
+        `<option value="${c.id}" ${c.id === appState.chatTarget ? 'selected' : ''}>${escHtml(c.label)}</option>`
+      ).join('');
+    }
+
+    function renderChat() {
+      renderChatSelect();
+      onChatCandidateChange();
+    }
+
+    async function onChatCandidateChange() {
+      appState.chatTarget = document.getElementById('chat-candidate-select').value;
+      if (!appState.chatTarget) return;
+      const c = appState.matchResults.find(x => x.candidate_id === appState.chatTarget);
+      const r = appState.resumes.find(x => x.id === appState.chatTarget);
+      const label = c?.candidate_name || r?.name || 'candidate';
+      document.getElementById('chat-header-label').textContent = `Ask about ${label}`;
+      const preview = document.getElementById('resume-preview');
+      preview.textContent = 'Loading resume...';
+      try {
+        const data = await API.getResume(appState.chatTarget);
+        preview.textContent = data.text?.trim() || '(No text extracted from this PDF yet)';
+      } catch (e) {
+        preview.textContent = `(Could not load resume: ${e.message})`;
+      }
+      renderChatMessages();
+    }
+
+    function renderChatMessages() {
+      const hist = appState.chatHistory[appState.chatTarget] || [];
+      document.getElementById('chat-messages').innerHTML = hist.map(m => `
+        <div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${m.content}</div>
+      `).join('');
+      const box = document.getElementById('chat-messages');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function fillChat(text) {
+      document.getElementById('chat-input').value = text;
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if (!msg || !appState.chatTarget) return;
+      const hist = appState.chatHistory[appState.chatTarget] ||= [];
+      hist.push({ role: 'user', content: msg });
+      renderChatMessages();
+      input.value = '';
+      try {
+        const data = await API.chat(appState.chatTarget, msg);
+        appState.chatHistory[appState.chatTarget] = data.history || hist.concat([
+          { role: 'assistant', content: data.reply },
+        ]);
+        renderChatMessages();
+      } catch (e) {
+        hist.pop();
+        renderChatMessages();
+        showToast(e.message, 'error');
+      }
+    }
+
+    /* ── Interview ── */
+    const IQ_SECTIONS = [
+      { key: 'technical', icon: '🔧', title: 'Technical Validation', color: '#6366F1', count: 3 },
+      { key: 'problem_solving', icon: '🧠', title: 'Problem Solving', color: '#8B5CF6', count: 2 },
+      { key: 'behavioral', icon: '👥', title: 'Behavioral', color: '#10B981', count: 2 },
+      { key: 'gap_probing', icon: '⚠️', title: 'Gap Probing', color: '#F59E0B', count: 2 },
+      { key: 'role_specific', icon: '🎯', title: 'Role-Specific', color: '#0EA5E9', count: 1 },
+    ];
+
+    function renderInterviewSelect() {
+      const sel = document.getElementById('interview-candidate-select');
+      const candidates = getChatCandidates();
+      if (!candidates.length) {
+        sel.innerHTML = '<option value="">Upload resumes first</option>';
+        return;
+      }
+      if (!appState.interviewTarget || !candidates.find(c => c.id === appState.interviewTarget)) {
+        appState.interviewTarget = candidates[0].id;
+      }
+      sel.innerHTML = candidates.map(c =>
+        `<option value="${c.id}" ${c.id === appState.interviewTarget ? 'selected' : ''}>${escHtml(c.label)}</option>`
+      ).join('');
+      sel.onchange = () => { appState.interviewTarget = sel.value; };
+    }
+
+    async function generateInterview() {
+      if (!appState.interviewTarget) {
+        showToast('Upload and select a candidate first', 'error');
+        return;
+      }
+      try {
+        const data = await API.interview(appState.interviewTarget, appState.selectedJdId);
+        appState.interviewQuestions = data.questions;
+        renderInterviewSections();
+        showToast('Interview questions generated', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function renderInterviewSections() {
+      const container = document.getElementById('iq-sections');
+      const q = appState.interviewQuestions;
+      if (!q) {
+        container.innerHTML = `<div class="empty-state" id="interview-empty">
+          <div class="empty-icon">🎤</div><h3>No questions yet</h3>
+          <p>Select a candidate and click Generate Questions</p></div>`;
+        return;
+      }
+      container.innerHTML = IQ_SECTIONS.map((sec, i) => {
+        const items = q[sec.key] || [];
+        const questions = items.map((item, qi) => `
+          <div class="iq-q ${item.asked ? 'asked' : ''}" id="iq-${sec.key}-${qi}">
+            <div class="iq-q-text">${item.q}</div>
+            <div class="iq-why">${item.why_ask}</div>
+            <label class="iq-check">
+              <input type="checkbox" ${item.asked ? 'checked' : ''}
+                onchange="toggleAsked('${sec.key}', ${qi}, this.checked)" />
+              Mark as asked
+            </label>
+          </div>`).join('');
+        return `
+          <div class="iq-section ${i === 0 ? 'open' : ''}" id="iq-sec-${sec.key}">
+            <div class="iq-header" onclick="toggleIqSection('${sec.key}')">
+              <span class="iq-dot" style="background:${sec.color}"></span>
+              <span class="iq-title">${sec.icon} ${sec.title}</span>
+              <span class="iq-count">${items.length}</span>
+              <span class="iq-chevron">▼</span>
+            </div>
+            <div class="iq-body"><div class="iq-questions">${questions}</div></div>
+          </div>`;
+      }).join('');
+    }
+
+    function toggleIqSection(key) {
+      document.getElementById(`iq-sec-${key}`).classList.toggle('open');
+    }
+
+    function toggleAsked(section, idx, checked) {
+      if (appState.interviewQuestions?.[section]?.[idx]) {
+        appState.interviewQuestions[section][idx].asked = checked;
+        const el = document.getElementById(`iq-${section}-${idx}`);
+        if (el) el.classList.toggle('asked', checked);
+      }
+    }
+
+    function exportInterview() {
+      if (!appState.interviewTarget) {
+        showToast('Select a candidate first', 'error');
+        return;
+      }
+      window.open(`/api/interview/export?candidate_id=${encodeURIComponent(appState.interviewTarget)}`, '_blank');
+    }
+
+    /* ── Settings ── */
+    function openSettings() {
+      document.getElementById('settings-drawer').classList.add('open');
+      document.getElementById('drawer-backdrop').classList.add('open');
+      loadSettings();
+    }
+    function closeSettings() {
+      document.getElementById('settings-drawer').classList.remove('open');
+      document.getElementById('drawer-backdrop').classList.remove('open');
+    }
+    async function clearAllData() {
+      if (!confirm('Clear all uploaded files and match results?')) return;
+      try {
+        await API.clear();
+        appState.resumes = [];
+        appState.jds = [];
+        appState.matchResults = [];
+        appState.matchHasRun = false;
+        appState.selectedJdId = null;
+        appState.chatHistory = {};
+        appState.interviewQuestions = null;
+        renderResumeList();
+        renderJdList();
+        renderCandidates();
+        updateJdSelect();
+        closeSettings();
+        showToast('All data cleared', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    /* ── Init ── */
+    async function init() {
+      setupDropzones();
+      await loadFiles();
+      updateJdSelect();
+      renderCandidates();
+      updateTopbar();
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeCompareModal(); closeSettings(); }
+      });
+    }
+    init();
+  </script>
+</body>
+</html>
